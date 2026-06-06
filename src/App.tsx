@@ -1,8 +1,10 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useEffect } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import { LangProvider } from './contexts/LangContext'
+import { notificationService, startEventListener, stopEventListener } from './lib/notifications'
+import { getAccessToken } from './lib/storage'
 
 // Layouts
 import MainLayout from './layouts/MainLayout'
@@ -35,6 +37,33 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
+  const { isAuthenticated } = useAuth()
+
+  // Request notification permission and start listening for events
+  useEffect(() => {
+    notificationService.requestPermission().catch(console.error)
+  }, [])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const startListener = async () => {
+        try {
+          const token = await getAccessToken()
+          if (token) {
+            startEventListener(token)
+          }
+        } catch (error) {
+          console.error('Failed to start event listener:', error)
+        }
+      }
+      startListener()
+
+      return () => {
+        stopEventListener()
+      }
+    }
+  }, [isAuthenticated])
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
