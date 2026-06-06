@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 
 // Web Notifications API for web platform
 const requestNotificationPermission = async () => {
@@ -155,8 +155,7 @@ export const startEventListener = async (token: string, onNewEvent?: (event: any
 
   const checkForNewEvents = async () => {
     try {
-      const response = await axios.get('https://ikigai-backend.replit.app/api/v1/notifications/recent', {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await api.get('/notifications/recent', {
         params: { limit: 50 },
       });
 
