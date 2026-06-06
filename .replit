@@ -1,16 +1,41 @@
-entrypoint = "src/main.tsx"
-run = "npm run dev"
+modules = ["nodejs-20"]
+[agent]
+expertMode = true
+stack = "BEST_EFFORT_FALLBACK"
 
 [nix]
-channel = "unstable"
+channel = "stable-25_05"
 
-[env]
-NODE_ENV = "production"
-VITE_API_URL = "https://ikigai-backend.replit.app/api"
+[workflows]
+runButton = "Project"
 
-[packager]
-language = "nodejs"
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "BROWSER=none npx expo start --web --port 5000"
+waitForPort = 5000
 
 [[ports]]
-localPort = 5174
+localPort = 5000
 externalPort = 80
+
+[deployment]
+deploymentTarget = "autoscale"
+build = ["npx", "expo", "export", "--platform", "web"]
+publicDir = "dist"
+run = ["npx", "serve", "dist", "--listen", "5000"]

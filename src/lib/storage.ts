@@ -1,31 +1,61 @@
-const TOKEN_KEY = 'auth_token'
-const USER_KEY = 'user'
+import { Platform } from 'react-native';
+import { AuthTokens } from '../types';
 
-export const getToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY)
+const ACCESS_TOKEN_KEY = 'ikigai_access_token';
+const REFRESH_TOKEN_KEY = 'ikigai_refresh_token';
+
+// Web-safe storage helpers
+function webGet(key: string): string | null {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return window.localStorage.getItem(key);
+  }
+  return null;
+}
+function webSet(key: string, value: string): void {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem(key, value);
+  }
+}
+function webRemove(key: string): void {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.removeItem(key);
+  }
 }
 
-export const setToken = (token: string): void => {
-  localStorage.setItem(TOKEN_KEY, token)
+export async function saveTokens(tokens: AuthTokens): Promise<void> {
+  if (Platform.OS === 'web') {
+    webSet(ACCESS_TOKEN_KEY, tokens.accessToken);
+    webSet(REFRESH_TOKEN_KEY, tokens.refreshToken);
+  } else {
+    const SecureStore = require('expo-secure-store');
+    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.accessToken);
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken);
+  }
 }
 
-export const removeToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY)
+export async function getAccessToken(): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    return webGet(ACCESS_TOKEN_KEY);
+  }
+  const SecureStore = require('expo-secure-store');
+  return SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
 }
 
-export const getUser = () => {
-  const user = localStorage.getItem(USER_KEY)
-  return user ? JSON.parse(user) : null
+export async function getRefreshToken(): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    return webGet(REFRESH_TOKEN_KEY);
+  }
+  const SecureStore = require('expo-secure-store');
+  return SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 }
 
-export const setUser = (user: any): void => {
-  localStorage.setItem(USER_KEY, JSON.stringify(user))
-}
-
-export const removeUser = (): void => {
-  localStorage.removeItem(USER_KEY)
-}
-
-export const clearStorage = (): void => {
-  localStorage.clear()
+export async function clearTokens(): Promise<void> {
+  if (Platform.OS === 'web') {
+    webRemove(ACCESS_TOKEN_KEY);
+    webRemove(REFRESH_TOKEN_KEY);
+  } else {
+    const SecureStore = require('expo-secure-store');
+    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  }
 }
