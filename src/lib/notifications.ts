@@ -1,7 +1,43 @@
 import api from './api';
+import toast from 'react-hot-toast';
 
-// Web Notifications API for web platform
+// Detect if running on mobile browser
+const isMobileBrowser = () => {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// Play notification sound
+const playNotificationSound = () => {
+  try {
+    // Use Web Audio API to play a simple beep
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  } catch (error) {
+    // Silently fail if audio context not available
+  }
+};
+
+// Web Notifications API for desktop, toast fallback for mobile
 const requestNotificationPermission = async () => {
+  if (isMobileBrowser()) {
+    // Mobile browsers don't need notification permission for in-app toasts
+    return true;
+  }
+
   if (!('Notification' in window)) {
     console.log('This browser does not support notifications');
     return false;
@@ -25,6 +61,33 @@ const requestNotificationPermission = async () => {
 };
 
 const sendNotification = (title: string, options?: NotificationOptions) => {
+  const isMobile = isMobileBrowser();
+  const body = (options as any)?.body || '';
+  const message = body ? `${title}\n${body}` : title;
+
+  // For mobile browsers, use in-app toast + sound
+  if (isMobile) {
+    playNotificationSound();
+    
+    // Show toast notification with longer duration for important notifications
+    const duration = (options as any)?.requireInteraction ? 5000 : 3000;
+    toast.success(message, {
+      duration,
+      icon: '🔔',
+      style: {
+        background: '#1f2937',
+        color: '#fff',
+        padding: '16px',
+        borderRadius: '8px',
+        maxWidth: '90vw',
+        wordBreak: 'break-word',
+      },
+      position: 'top-center',
+    });
+    return;
+  }
+
+  // For desktop, use Web Notifications API
   if (!('Notification' in window)) {
     console.log('This browser does not support notifications');
     return;
@@ -37,6 +100,7 @@ const sendNotification = (title: string, options?: NotificationOptions) => {
         badge: '/favicon.ico',
         ...options,
       });
+      playNotificationSound();
     } catch (error) {
       console.error('Failed to send notification:', error);
     }
