@@ -158,9 +158,14 @@ export default function LeaderboardPage() {
                       {entry.name}
                       {isUser && <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-1 rounded">You</span>}
                     </h3>
-                    <p className="text-text-muted text-sm">
-                      {entry.church || entry.diocese ? `🏛️ ${entry.church}${entry.diocese ? ` • ${entry.diocese}` : ''}` : ''}
-                    </p>
+                    <div className="space-y-0.5">
+                      {entry.church && (
+                        <p className="text-text-muted text-sm">🏛️ {entry.church}</p>
+                      )}
+                      {entry.diocese && (
+                        <p className="text-text-muted text-xs">📍 {entry.diocese}</p>
+                      )}
+                    </div>
                   </div>
 
                   {/* XP */}
