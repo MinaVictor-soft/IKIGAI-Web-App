@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Platform, View, Text, StyleSheet } from 'react-native';
+import { notificationService } from '../lib/notifications';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -82,6 +83,33 @@ function MainTabs() {
   const { data: sessions } = useActiveSessions();
   const { data: history } = useMyXpHistory();
   const { data: publications } = usePublications();
+
+  // Web push notifications — request permission once, detect new quizzes
+  const knownQuizIds = useRef<Set<string>>(new Set());
+  const notifReady = useRef(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      notificationService.requestPermission().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!quizzes) return;
+    if (!notifReady.current) {
+      quizzes.forEach((q: any) => knownQuizIds.current.add(q.id));
+      notifReady.current = true;
+      return;
+    }
+    if (Platform.OS === 'web') {
+      quizzes.forEach((q: any) => {
+        if (!knownQuizIds.current.has(q.id)) {
+          knownQuizIds.current.add(q.id);
+          notificationService.notifyNewQuiz(q.title || 'New Quiz', q.xpReward || 0);
+        }
+      });
+    }
+  }, [quizzes]);
 
   // Badge counts
   const submittedIds = new Set((submissions || []).map((s: any) => s.quizId));
