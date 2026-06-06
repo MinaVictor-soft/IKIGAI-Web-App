@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import {
   Home,
   User,
@@ -13,17 +14,18 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLang } from '../contexts/LangContext'
+import { getNavConfig, onNavConfigChange, type NavConfig } from '../lib/navConfig'
 
-const TABS = [
-  { name: 'home', path: '/', icon: Home },
-  { name: 'profile', path: '/profile', icon: User },
-  { name: 'leaderboard', path: '/leaderboard', icon: Medal },
-  { name: 'events', path: '/events', icon: Calendar },
-  { name: 'quizzes', path: '/quizzes', icon: HelpCircle },
-  { name: 'library', path: '/library', icon: Book },
-  { name: 'sports', path: '/sports', icon: Trophy },
-  { name: 'scanQr', path: '/scan', icon: QrCode },
-  { name: 'info', path: '/info', icon: Info },
+const ALL_TABS = [
+  { name: 'home', path: '/', icon: Home, configKey: 'dashboard' as const },
+  { name: 'profile', path: '/profile', icon: User, configKey: 'profile' as const },
+  { name: 'leaderboard', path: '/leaderboard', icon: Medal, configKey: 'leaderboard' as const },
+  { name: 'events', path: '/events', icon: Calendar, configKey: 'events' as const },
+  { name: 'quizzes', path: '/quizzes', icon: HelpCircle, configKey: 'quizzes' as const },
+  { name: 'library', path: '/library', icon: Book, configKey: 'library' as const },
+  { name: 'sports', path: '/sports', icon: Trophy, configKey: 'sports' as const },
+  { name: 'scanQr', path: '/scan', icon: QrCode, configKey: 'scanQr' as const },
+  { name: 'info', path: '/info', icon: Info, configKey: 'info' as const },
 ]
 
 interface SidebarProps {
@@ -36,6 +38,18 @@ export default function Sidebar({ isOpen, onClose, currentPath }: SidebarProps) 
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { isRTL } = useLang()
+  const [navConfig, setNavConfig] = useState<NavConfig>(getNavConfig())
+
+  // Listen for nav config changes from admin dashboard
+  useEffect(() => {
+    const unsubscribe = onNavConfigChange((config) => {
+      setNavConfig(config)
+    })
+    return unsubscribe
+  }, [])
+
+  // Filter tabs based on nav config
+  const TABS = ALL_TABS.filter(tab => navConfig[tab.configKey] !== false)
 
   const handleNavigate = (path: string) => {
     navigate(path)

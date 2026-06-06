@@ -28,7 +28,8 @@ export default function QuizPlayScreen() {
   const { quizId, title } = route.params;
   const { data: quiz, isLoading, error } = useQuizDetail(quizId);
   const { data: previousResult, isLoading: resultLoading } = useMyQuizResult(quizId);
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const isArabic = lang === 'ar';
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -290,7 +291,7 @@ export default function QuizPlayScreen() {
 
       {/* Question */}
       <ScrollView style={styles.questionContainer} contentContainerStyle={styles.questionContent}>
-        <Text style={styles.questionText}>{question.text}</Text>
+        <Text style={[styles.questionText, isArabic && styles.questionTextRtl]}>{question.text}</Text>
 
         <View style={styles.options}>
           {question.options.map((option: string, index: number) => {
@@ -299,13 +300,21 @@ export default function QuizPlayScreen() {
             return (
               <TouchableOpacity
                 key={index}
-                style={[styles.optionButton, isSelected && styles.optionSelected]}
+                style={[
+                  styles.optionButton,
+                  isSelected && styles.optionSelected,
+                  isArabic && styles.optionButtonRtl
+                ]}
                 onPress={() => handleAnswer(question.id, optionId)}
               >
-                <View style={[styles.optionCircle, isSelected && styles.optionCircleSelected]}>
+                <View style={[styles.optionCircle, isSelected && styles.optionCircleSelected, isArabic && styles.optionCircleRtl]}>
                   {isSelected && <View style={styles.optionDot} />}
                 </View>
-                <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                <Text style={[
+                  styles.optionText,
+                  isSelected && styles.optionTextSelected,
+                  isArabic && styles.optionTextRtl
+                ]}>
                   {option}
                 </Text>
               </TouchableOpacity>
@@ -676,5 +685,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.primary,
     lineHeight: 18,
+  },
+  // RTL (Arabic) styles
+  questionTextRtl: {
+    textAlign: 'right',
+  },
+  optionButtonRtl: {
+    flexDirection: 'row-reverse',
+  },
+  optionCircleRtl: {
+    marginRight: 0,
+    marginLeft: SPACING.sm,
+  },
+  optionTextRtl: {
+    textAlign: 'right',
   },
 });

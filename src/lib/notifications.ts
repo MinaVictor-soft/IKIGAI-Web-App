@@ -1,8 +1,17 @@
 import api from './api';
-import toast from 'react-hot-toast';
+import { Platform } from 'react-native';
 
-// Detect if running on mobile browser
+// Conditionally import react-hot-toast only on web
+let toast: any = null;
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  try {
+    toast = require('react-hot-toast').default;
+  } catch (error) {
+    console.warn('react-hot-toast not available');
+  }
+}
 const isMobileBrowser = () => {
+  if (Platform.OS !== 'web') return false;
   if (typeof window === 'undefined') return false;
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
@@ -10,8 +19,7 @@ const isMobileBrowser = () => {
 // Play notification sound
 const playNotificationSound = () => {
   try {
-    // Use Web Audio API to play a simple beep
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -70,20 +78,25 @@ const sendNotification = (title: string, options?: NotificationOptions) => {
     playNotificationSound();
     
     // Show toast notification with longer duration for important notifications
-    const duration = (options as any)?.requireInteraction ? 5000 : 3000;
-    toast.success(message, {
-      duration,
-      icon: '🔔',
-      style: {
-        background: '#1f2937',
-        color: '#fff',
-        padding: '16px',
-        borderRadius: '8px',
-        maxWidth: '90vw',
-        wordBreak: 'break-word',
-      },
-      position: 'top-center',
-    });
+    if (toast && typeof toast.success === 'function') {
+      const duration = (options as any)?.requireInteraction ? 5000 : 3000;
+      toast.success(message, {
+        duration,
+        icon: '🔔',
+        style: {
+          background: '#1f2937',
+          color: '#fff',
+          padding: '16px',
+          borderRadius: '8px',
+          maxWidth: '90vw',
+          wordBreak: 'break-word',
+        },
+        position: 'top-center',
+      });
+    } else {
+      // Fallback: log to console if toast not available
+      console.log('Notification:', message);
+    }
     return;
   }
 
