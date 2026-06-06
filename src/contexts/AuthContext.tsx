@@ -39,8 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserState(storedUser)
           try {
             const response = await profileApi.getProfile()
-            setUserState(response.data)
-            setUser(response.data)
+            setUserState(response.data.data)
+            setUser(response.data.data)
           } catch (error) {
             removeToken()
             removeUser()
@@ -60,9 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true)
       const response = await authApi.login(email, password)
-      const { token, user: userData } = response.data
+      const { accessToken, user: userData } = response.data.data
 
-      setToken(token)
+      setToken(accessToken)
       setUser(userData)
       setUserState(userData)
       toast.success('Login successful')
@@ -78,9 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true)
       const response = await authApi.register({ email, password, name })
-      const { token, user: userData } = response.data
+      const { accessToken, user: userData } = response.data.data
 
-      setToken(token)
+      setToken(accessToken)
       setUser(userData)
       setUserState(userData)
       toast.success('Registration successful')
