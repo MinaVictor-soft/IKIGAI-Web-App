@@ -53,6 +53,8 @@ export interface LeaderboardEntry {
   tribe: Tribe | null;
   level: Level | null;
   rank: number;
+  church?: string;
+  diocese?: string;
 }
 
 export interface Session {
