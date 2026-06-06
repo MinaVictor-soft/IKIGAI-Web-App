@@ -212,8 +212,8 @@ export const startEventListener = async (token: string, onNewEvent?: (event: any
     }
   };
 
-  // Check for new events every 10 seconds (optimized for faster notifications)
-  eventListenerInterval = setInterval(checkForNewEvents, 10000);
+  // Check for new events every 5 seconds (ultra-fast real-time notifications)
+  eventListenerInterval = setInterval(checkForNewEvents, 5000);
   
   // Initial check
   await checkForNewEvents();
