@@ -155,49 +155,65 @@ export const startEventListener = async (token: string, onNewEvent?: (event: any
 
   const checkForNewEvents = async () => {
     try {
-      const response = await axios.get('https://ikigai-backend.replit.app/api/v1/events/recent', {
+      const response = await axios.get('https://ikigai-backend.replit.app/api/v1/notifications/recent', {
         headers: { Authorization: `Bearer ${token}` },
-        params: { since: lastEventCheckTime.toISOString() },
+        params: { limit: 50 },
       });
 
-      const events = response.data.data || [];
-      for (const event of events) {
-        onNewEvent?.(event);
-        
-        // Send appropriate notification based on event type
-        switch (event.type) {
-          case 'QUIZ_CREATED':
-            notificationService.notifyNewQuiz(event.data.title, event.data.xpReward);
-            break;
-          case 'EVENT_CREATED':
-            notificationService.notifyNewEvent(event.data.title, event.data.startTime);
-            break;
-          case 'MATCH_CREATED':
-            notificationService.notifyNewMatch(event.data.title, event.data.sport);
-            break;
-          case 'MATCH_LIVE':
-            notificationService.notifyMatchLive(event.data.title);
-            break;
-          case 'PUBLICATION_CREATED':
-            notificationService.notifyNewPublication(event.data.title, event.data.author);
-            break;
-          case 'ACHIEVEMENT_EARNED':
-            notificationService.notifyAchievement(event.data.achievement);
-            break;
-          case 'LEVEL_UP':
-            notificationService.notifyLevelUp(event.data.levelName);
-            break;
+      const notifications = response.data.data || [];
+      for (const notification of notifications) {
+        // Check if this notification is newer than last check
+        const notificationTime = new Date(notification.createdAt);
+        if (notificationTime > lastEventCheckTime) {
+          onNewEvent?.(notification);
+          
+          // Send appropriate web notification based on notification type
+          switch (notification.type) {
+            case 'QUIZ_CREATED':
+              notificationService.notifyNewQuiz(
+                notification.data?.title || 'New Quiz',
+                notification.data?.xpReward || 0
+              );
+              break;
+            case 'EVENT_CREATED':
+              notificationService.notifyNewEvent(
+                notification.data?.title || 'New Event',
+                notification.data?.startTime || new Date().toISOString()
+              );
+              break;
+            case 'MATCH_CREATED':
+              notificationService.notifyNewMatch(
+                notification.data?.title || 'New Match',
+                notification.data?.sport || 'Sports'
+              );
+              break;
+            case 'MATCH_LIVE':
+              notificationService.notifyMatchLive(notification.data?.title || 'Match Starting');
+              break;
+            case 'PUBLICATION_CREATED':
+              notificationService.notifyNewPublication(
+                notification.data?.title || 'New Publication',
+                notification.data?.author || 'Unknown'
+              );
+              break;
+            case 'ACHIEVEMENT_EARNED':
+              notificationService.notifyAchievement(notification.data?.achievement || 'Achievement Unlocked');
+              break;
+            case 'LEVEL_UP':
+              notificationService.notifyLevelUp(notification.data?.levelName || 'Level Up');
+              break;
+          }
         }
       }
 
       lastEventCheckTime = new Date();
     } catch (error) {
-      console.error('Error checking for new events:', error);
+      console.error('Error checking for new notifications:', error);
     }
   };
 
-  // Check for new events every 30 seconds
-  eventListenerInterval = setInterval(checkForNewEvents, 30000);
+  // Check for new events every 10 seconds (optimized for faster notifications)
+  eventListenerInterval = setInterval(checkForNewEvents, 10000);
   
   // Initial check
   await checkForNewEvents();
