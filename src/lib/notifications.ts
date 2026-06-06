@@ -213,9 +213,49 @@ export const notificationService = {
 // Real-time event listener setup
 let eventListenerInterval: any = null;
 let lastEventCheckTime = new Date();
+let serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
+
+// Register Service Worker for background notifications
+const registerServiceWorker = async (token: string) => {
+  if (!('serviceWorker' in navigator)) {
+    console.log('Service Workers not supported');
+    return;
+  }
+
+  try {
+    serviceWorkerRegistration = await navigator.serviceWorker.register('/service-worker.js', {
+      scope: '/',
+    });
+
+    console.log('Service Worker registered successfully');
+
+    // Send token to service worker so it can authenticate with backend
+    if (serviceWorkerRegistration.active) {
+      serviceWorkerRegistration.active.postMessage({
+        type: 'SET_TOKEN',
+        token: token,
+      });
+    }
+
+    // Also send token when controller changes (e.g., on first registration)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SET_TOKEN',
+          token: token,
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Service Worker registration failed:', error);
+  }
+};
 
 export const startEventListener = async (token: string, onNewEvent?: (event: any) => void) => {
   if (eventListenerInterval) return; // Already running
+
+  // Register service worker for background notifications
+  await registerServiceWorker(token);
 
   const checkForNewEvents = async () => {
     try {
@@ -275,7 +315,7 @@ export const startEventListener = async (token: string, onNewEvent?: (event: any
     }
   };
 
-  // Check for new events every 5 seconds (ultra-fast real-time notifications)
+  // Check for new events every 5 seconds (ultra-fast real-time notifications when app is open)
   eventListenerInterval = setInterval(checkForNewEvents, 5000);
   
   // Initial check
