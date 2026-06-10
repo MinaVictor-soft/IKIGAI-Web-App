@@ -39,6 +39,23 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const { isAuthenticated } = useAuth()
 
+  // Prevent back button from closing app on mobile
+  useEffect(() => {
+    // Push dummy history state to prevent exiting the app on first back press
+    window.history.pushState(null, '', window.location.pathname)
+    
+    // Handle back button
+    const handleBackButton = (event: any) => {
+      window.history.pushState(null, '', window.location.pathname)
+    }
+    
+    window.addEventListener('popstate', handleBackButton)
+    
+    return () => {
+      window.removeEventListener('popstate', handleBackButton)
+    }
+  }, [])
+
   // Request notification permission and start listening for events
   useEffect(() => {
     notificationService.requestPermission().catch(console.error)
