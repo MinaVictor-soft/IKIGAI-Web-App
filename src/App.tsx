@@ -39,18 +39,31 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const { isAuthenticated } = useAuth()
 
-  // Prevent back button from closing app on mobile
+  // Prevent mobile back button from closing app (SPA navigation issue)
   useEffect(() => {
-    // Push dummy history state to prevent exiting the app on first back press
-    window.history.pushState(null, '', window.location.pathname)
-    
-    // Handle back button
-    const handleBackButton = (event: any) => {
-      window.history.pushState(null, '', window.location.pathname)
+    // Push multiple dummy states to maintain history stack depth
+    // This prevents browser closure when device back button is pressed on empty history
+    const pushDummyStates = () => {
+      // Push 3 dummy states to create a buffer
+      for (let i = 0; i < 3; i++) {
+        window.history.pushState({ isApp: true, index: i }, '', window.location.pathname)
+      }
     }
-    
+
+    // Initial push on app load
+    pushDummyStates()
+
+    // Handle popstate (back button pressed)
+    const handleBackButton = () => {
+      // If we're at the top level and user presses back, push dummy state again
+      // This prevents the browser from closing
+      if (window.history.length <= 1) {
+        window.history.pushState({ isApp: true, preventClose: true }, '', window.location.pathname)
+      }
+    }
+
     window.addEventListener('popstate', handleBackButton)
-    
+
     return () => {
       window.removeEventListener('popstate', handleBackButton)
     }
