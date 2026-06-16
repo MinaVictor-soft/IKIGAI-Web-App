@@ -1,11 +1,12 @@
 import { Platform } from 'react-native';
 
 // API base URL
-// DEV: uses local IP (for testing with Expo Go on same WiFi)
+// DEV: uses localhost for local development
 // PROD: uses your deployed Replit URL (for APK distributed to users)
+const DEV_API_URL = 'http://localhost:3000/api/v1'; // Local backend
 const PROD_API_URL = 'https://ikigai-backend.replit.app/api/v1'; // Production backend on Replit
 
-export const API_BASE_URL = PROD_API_URL;
+export const API_BASE_URL = DEV_API_URL;
 
 export const COLORS = {
   // Youth-friendly unisex theme

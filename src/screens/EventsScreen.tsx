@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../contexts/LangContext';
-import { useMyXpHistory, useAvailableQuizzes, useActiveSessions, useFootballMatches, useMyQuizSubmissions } from '../hooks/useApi';
+import { useMyXpHistory, useAvailableQuizzes, useActiveSessions, useFootballMatches, useMyQuizSubmissions, useUpcomingTournamentMatches } from '../hooks/useApi';
 import { COLORS, SPACING, BORDER_RADIUS } from '../config/constants';
 import ConferenceHeader from '../components/ConferenceHeader';
 
@@ -30,6 +30,7 @@ export default function EventsScreen() {
   const { data: sessions } = useActiveSessions();
   const { data: matches } = useFootballMatches();
   const { data: submissions } = useMyQuizSubmissions();
+  const { data: tournamentMatches } = useUpcomingTournamentMatches();
 
   const [expanded, setExpanded] = useState<'upcoming' | 'completed' | null>('upcoming');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -46,14 +47,17 @@ export default function EventsScreen() {
 
   const upcomingMatches = (matches || []).filter(m => m.status === 'SCHEDULED' || m.status === 'LIVE');
   const completedMatches = (matches || []).filter(m => m.status === 'COMPLETED');
+  
+  const upcomingTournamentMatches = (tournamentMatches || []).filter(m => m.status === 'SCHEDULED' || m.status === 'LIVE');
+  const completedTournamentMatches = (tournamentMatches || []).filter(m => m.status === 'COMPLETED');
 
   const availableQuizzes = quizzes || [];
   const submittedQuizIds = new Set((submissions || []).map((s: any) => s.quizId));
   const unsubmittedQuizzes = availableQuizzes.filter(q => !submittedQuizIds.has(q.id));
   const completedQuizzes = availableQuizzes.filter(q => submittedQuizIds.has(q.id));
 
-  const upcomingCount = upcomingSessions.length + unsubmittedQuizzes.length + upcomingMatches.length;
-  const completedCount = completedMatches.length + completedQuizzes.length + completedSessions.length;
+  const upcomingCount = upcomingSessions.length + unsubmittedQuizzes.length + upcomingMatches.length + upcomingTournamentMatches.length;
+  const completedCount = completedMatches.length + completedQuizzes.length + completedSessions.length + completedTournamentMatches.length;
 
   const toggleSection = (section: 'upcoming' | 'completed') => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -141,6 +145,19 @@ export default function EventsScreen() {
                     <Ionicons name="eye-outline" size={16} color={COLORS.textMuted} style={{ marginLeft: 6 }} />
                   </TouchableOpacity>
                 ))}
+                {upcomingTournamentMatches.map((m: any) => (
+                  <TouchableOpacity key={m.id} style={styles.eventRow} onPress={() => openMatch(m, 'upcoming')} activeOpacity={0.7}>
+                    <View style={[styles.eventTypeBadge, { backgroundColor: COLORS.warning + '20' }]}><Ionicons name="trophy" size={14} color={COLORS.warning} /></View>
+                    <View style={styles.eventInfo}>
+                      <Text style={styles.eventText} numberOfLines={1}>🏆 {m.team1?.name} vs {m.team2?.name}</Text>
+                      <Text style={styles.eventType}>{m.tournament?.name} • {m.status === 'LIVE' ? '🔴 Live' : (lang === 'ar' ? 'بطولة' : 'Tournament')}</Text>
+                    </View>
+                    <View style={[styles.xpChip, m.status === 'LIVE' && { backgroundColor: '#EF4444' + '20' }]}>
+                      <Text style={[styles.xpChipText, m.status === 'LIVE' && { color: '#EF4444' }]}>{m.status === 'LIVE' ? '🔴' : '⏰'}</Text>
+                    </View>
+                    <Ionicons name="eye-outline" size={16} color={COLORS.textMuted} style={{ marginLeft: 6 }} />
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
           </View>
@@ -189,6 +206,16 @@ export default function EventsScreen() {
                     <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
                   </TouchableOpacity>
                 ))}
+                {completedTournamentMatches.map((m: any) => (
+                  <TouchableOpacity key={m.id} style={styles.eventRow} onPress={() => openMatch(m, 'completed')} activeOpacity={0.7}>
+                    <View style={[styles.eventTypeBadge, { backgroundColor: COLORS.success + '15' }]}><Ionicons name="checkmark" size={14} color={COLORS.success} /></View>
+                    <View style={styles.eventInfo}>
+                      <Text style={[styles.eventText, { color: COLORS.textSecondary }]} numberOfLines={1}>🏆 {m.team1?.name} {m.team1Goals}-{m.team2Goals} {m.team2?.name}</Text>
+                      <Text style={styles.eventType}>{m.tournament?.name} • Completed</Text>
+                    </View>
+                    <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
           </View>
@@ -226,7 +253,9 @@ export default function EventsScreen() {
                 </View>
 
                 <Text style={styles.modalTitle}>
-                  {selectedEvent._type === 'match' ? `${selectedEvent.homeTeam.name} vs ${selectedEvent.awayTeam.name}` : selectedEvent.title}
+                  {selectedEvent._type === 'match' ? 
+                    (selectedEvent.homeTeam ? `${selectedEvent.homeTeam.name} vs ${selectedEvent.awayTeam.name}` : `${selectedEvent.team1?.name || 'Team 1'} vs ${selectedEvent.team2?.name || 'Team 2'}`)
+                    : selectedEvent.title}
                 </Text>
 
                 <View style={[styles.modalBadge, { backgroundColor: selectedEvent._status === 'upcoming' ? COLORS.primary + '15' : COLORS.success + '15' }]}>
@@ -266,21 +295,22 @@ export default function EventsScreen() {
                     {selectedEvent.status === 'COMPLETED' && (
                       <View style={styles.matchScore}>
                         <View style={styles.matchTeam}>
-                          <View style={[styles.teamDot, { backgroundColor: selectedEvent.homeTeam.color }]} />
-                          <Text style={styles.matchTeamName}>{selectedEvent.homeTeam.name}</Text>
+                          <View style={[styles.teamDot, { backgroundColor: selectedEvent.homeTeam?.color || selectedEvent.team1?.color || '#9333EA' }]} />
+                          <Text style={styles.matchTeamName}>{selectedEvent.homeTeam?.name || selectedEvent.team1?.name}</Text>
                         </View>
-                        <Text style={styles.matchScoreText}>{selectedEvent.homeScore} - {selectedEvent.awayScore}</Text>
+                        <Text style={styles.matchScoreText}>{selectedEvent.homeScore ?? selectedEvent.team1Goals ?? '-'} - {selectedEvent.awayScore ?? selectedEvent.team2Goals ?? '-'}</Text>
                         <View style={[styles.matchTeam, { justifyContent: 'flex-end' }]}>
-                          <Text style={styles.matchTeamName}>{selectedEvent.awayTeam.name}</Text>
-                          <View style={[styles.teamDot, { backgroundColor: selectedEvent.awayTeam.color }]} />
+                          <Text style={styles.matchTeamName}>{selectedEvent.awayTeam?.name || selectedEvent.team2?.name}</Text>
+                          <View style={[styles.teamDot, { backgroundColor: selectedEvent.awayTeam?.color || selectedEvent.team2?.color || '#3B82F6' }]} />
                         </View>
                       </View>
                     )}
                     {selectedEvent.status === 'LIVE' && (
                       <View style={styles.liveIndicator}><Text style={styles.liveText}>🔴 LIVE NOW</Text></View>
                     )}
-                    {selectedEvent.scheduledAt && <DetailItem icon="time" label="Scheduled" value={`${formatDate(selectedEvent.scheduledAt)} • ${formatTime(selectedEvent.scheduledAt)}`} />}
-                    <DetailItem icon="star" label="Win XP" value={`+${selectedEvent.winXp} XP`} highlight />
+                    {(selectedEvent.scheduledAt || selectedEvent.matchTime) && <DetailItem icon="time" label="Scheduled" value={`${formatDate(selectedEvent.scheduledAt || selectedEvent.matchTime)} • ${formatTime(selectedEvent.scheduledAt || selectedEvent.matchTime)}`} />}
+                    {selectedEvent.tournament && <DetailItem icon="trophy" label="Tournament" value={selectedEvent.tournament.name} />}
+                    <DetailItem icon="star" label="Win XP" value={`+${selectedEvent.winXp ?? '0'} XP`} highlight />
                   </View>
                 )}
               </>
