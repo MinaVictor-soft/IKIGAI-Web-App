@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 const DEV_API_URL = 'http://localhost:3000/api/v1'; // Local backend
 const PROD_API_URL = 'https://ikigai-backend.replit.app/api/v1'; // Production backend on Replit
 
-export const API_BASE_URL = DEV_API_URL;
+export const API_BASE_URL = PROD_API_URL;
 
 export const COLORS = {
   // Youth-friendly unisex theme
