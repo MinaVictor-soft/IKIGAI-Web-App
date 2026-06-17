@@ -158,7 +158,7 @@ export default function QuizPlayScreen() {
         </View>
 
         {/* Answers Review */}
-        <ScrollView style={styles.reviewContainer} contentContainerStyle={styles.reviewContent}>
+        <ScrollView style={styles.reviewContainer} contentContainerStyle={styles.reviewContent} scrollEnabled={false} showsVerticalScrollIndicator={false}>
           <Text style={styles.reviewTitle}>📋 Your Answers</Text>
           {questions.map((q: any, idx: number) => {
             const userAnswer = userAnswers.find((a: any) => a.questionId === q.id);
@@ -290,7 +290,7 @@ export default function QuizPlayScreen() {
       </View>
 
       {/* Question */}
-      <ScrollView style={styles.questionContainer} contentContainerStyle={styles.questionContent}>
+      <ScrollView style={styles.questionContainer} contentContainerStyle={styles.questionContent} scrollEnabled={false} showsVerticalScrollIndicator={false}>
         <Text style={[styles.questionText, isArabic && styles.questionTextRtl]}>{question.text}</Text>
 
         <View style={styles.options}>

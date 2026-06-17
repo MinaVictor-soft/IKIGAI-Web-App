@@ -205,6 +205,8 @@ export default function LibraryScreen() {
         <FlatList
           data={publications}
           keyExtractor={(item) => item.id}
+          scrollEnabled={false}
+          showsVerticalScrollIndicator={false}
           renderItem={renderItem}
           numColumns={2}
           contentContainerStyle={styles.list}

@@ -116,7 +116,7 @@ export default function ProfileScreen() {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} scrollEnabled={false} showsVerticalScrollIndicator={false}>
       {/* Avatar & Info */}
       <View style={styles.profileCard}>
         <View style={styles.avatar}>

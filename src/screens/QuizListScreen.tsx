@@ -60,6 +60,8 @@ export default function QuizListScreen() {
       <FlatList
         data={quizzes || []}
         keyExtractor={(item) => item.id}
+        scrollEnabled={false}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />

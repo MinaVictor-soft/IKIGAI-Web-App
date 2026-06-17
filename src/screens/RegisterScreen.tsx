@@ -134,8 +134,8 @@ export default function RegisterScreen({ onBack }: Props) {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+          scrollEnabled={false}
+          showsVerticalScrollIndicator={false}>
           {/* Back button */}
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={COLORS.text} />

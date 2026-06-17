@@ -82,6 +82,8 @@ export default function HomeScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+      scrollEnabled={false}
+      showsVerticalScrollIndicator={false}
     >
       {/* Hero Header */}
       <ConferenceHeader />
