@@ -74,7 +74,7 @@ export default function EventsScreen() {
   return (
     <View style={styles.container}>
       <ConferenceHeader />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} scrollEnabled={false} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} scrollEnabled={true} showsVerticalScrollIndicator={false}>
         <View style={styles.screenHeader}>
           <Text style={[styles.screenTitle, isRTL && styles.textRTL]}>
             {lang === 'ar' ? '📋 الأحداث والمهام' : '📋 Events & Missions'}

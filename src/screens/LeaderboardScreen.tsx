@@ -65,7 +65,7 @@ export default function LeaderboardScreen() {
         <FlatList
           data={leaderboard || []}
           keyExtractor={(item) => item.id}
-          scrollEnabled={false}
+          
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
@@ -90,7 +90,7 @@ export default function LeaderboardScreen() {
         <FlatList
           data={tribes || []}
           keyExtractor={(item) => item.id}
-          scrollEnabled={false}
+          
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
@@ -124,7 +124,7 @@ export default function LeaderboardScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false}>
+            <ScrollView scrollEnabled={true} showsVerticalScrollIndicator={false}>
               {/* Church & Diocese */}
               {(selectedUser?.church || selectedUser?.diocese) && (
                 <View style={styles.modalSection}>

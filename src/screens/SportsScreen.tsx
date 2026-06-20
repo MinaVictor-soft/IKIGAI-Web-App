@@ -89,7 +89,7 @@ export default function SportsScreen() {
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
-        scrollEnabled={false}
+        
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
         refreshControl={

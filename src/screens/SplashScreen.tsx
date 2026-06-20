@@ -305,6 +305,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 9999,
+    pointerEvents: 'none' as any,
   },
   gradient: {
     flex: 1,

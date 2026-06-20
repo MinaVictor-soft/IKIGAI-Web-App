@@ -134,7 +134,7 @@ export default function RegisterScreen({ onBack }: Props) {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          scrollEnabled={false}
+          
           showsVerticalScrollIndicator={false}>
           {/* Back button */}
           <TouchableOpacity style={styles.backButton} onPress={onBack}>

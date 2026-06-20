@@ -46,7 +46,7 @@ export default function TournamentScreen() {
 
       <ScrollView
         style={styles.content}
-        scrollEnabled={false}
+        
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
@@ -183,7 +183,7 @@ function TournamentCard({ tournament, isSelected, onPress, lang, isRTL }: any) {
           )}
 
           {activeTab === 'groups' && tournament.groups && tournament.groups.length > 0 && (
-            <ScrollView style={styles.tabContent} scrollEnabled={false} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.tabContent} scrollEnabled={true} showsVerticalScrollIndicator={false}>
               {tournament.groups.map((group: any) => (
                 <GroupStandings
                   key={group.id}
@@ -196,7 +196,7 @@ function TournamentCard({ tournament, isSelected, onPress, lang, isRTL }: any) {
           )}
 
           {activeTab === 'matches' && tournament.tournamentMatches && tournament.tournamentMatches.length > 0 && (
-            <ScrollView style={styles.tabContent} scrollEnabled={false} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.tabContent} scrollEnabled={true} showsVerticalScrollIndicator={false}>
               {/* Pending Matches */}
               {tournament.tournamentMatches.filter((m: any) => m.status === 'SCHEDULED' || m.status === 'LIVE').length > 0 && (
                 <View style={styles.matchesSubsection}>
@@ -228,7 +228,7 @@ function TournamentCard({ tournament, isSelected, onPress, lang, isRTL }: any) {
           )}
 
           {activeTab === 'cuplevels' && (
-            <ScrollView style={styles.tabContent} scrollEnabled={false} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.tabContent} scrollEnabled={true} showsVerticalScrollIndicator={false}>
               <CupLevelsDisplay tournament={tournament} bracket={bracket} lang={lang} isRTL={isRTL} />
             </ScrollView>
           )}

@@ -43,7 +43,7 @@ export default function InfoScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} scrollEnabled={false} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} scrollEnabled={true} showsVerticalScrollIndicator={false}>
       {/* Hero Header */}
       <LinearGradient
         colors={['#1e1b4b', '#312e81', '#0F172A']}
