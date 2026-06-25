@@ -221,7 +221,7 @@ export default function AppNavigator() {
   const { isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return null; // SplashScreen in App.tsx covers this with zIndex 9999
   }
 
   return (
