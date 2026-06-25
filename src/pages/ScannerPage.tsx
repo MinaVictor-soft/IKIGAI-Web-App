@@ -29,7 +29,7 @@ export default function ScannerPage() {
 
       if (scanMode === 'attendance') {
         // Mark attendance
-        response = await api.post('/attendance/scan', { qrCode })
+        response = await api.post('/attendance/scan', { qrToken: qrCode })
         const xpEarned = response.data?.data?.xpEarned || response.data?.data?.xpAwarded || 0
         setResult({
           success: true,
