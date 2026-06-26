@@ -38,7 +38,7 @@ export default function ScannerPage() {
         toast.success(`Attendance marked! +${xpEarned} XP`)
       } else if (scanMode === 'bonus') {
         // Claim bonus
-        response = await api.post('/bonus/claim', { qrCode })
+        response = await api.post('/bonus/claim', { token: qrCode })
         const xpEarned = response.data?.data?.xpEarned || 0
         setResult({
           success: true,
@@ -56,7 +56,7 @@ export default function ScannerPage() {
 
       setManualInput('')
     } catch (error: any) {
-      const message = error?.response?.data?.message || 'QR scan failed. Try again.'
+      const message = error?.response?.data?.error?.message || error?.response?.data?.message || 'QR scan failed. Try again.'
       setResult({
         success: false,
         message: `✗ Error: ${message}`,
