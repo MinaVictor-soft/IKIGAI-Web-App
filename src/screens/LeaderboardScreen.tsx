@@ -124,7 +124,12 @@ export default function LeaderboardScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView scrollEnabled={true} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={{ flex: 1 }}
+              scrollEnabled={true}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 2 }}
+            >
               {/* Church & Diocese */}
               {(selectedUser?.church || selectedUser?.diocese) && (
                 <View style={styles.modalSection}>
@@ -310,6 +315,7 @@ const styles = StyleSheet.create({
   modalCard: {
     backgroundColor: COLORS.surface, borderRadius: 20,
     width: '100%', maxWidth: 440, padding: SPACING.lg, maxHeight: '85%',
+    flexDirection: 'column',
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg },
   modalName: { fontSize: 20, fontWeight: 'bold', color: COLORS.text, flex: 1 },

@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+// @ts-ignore
+const Img = 'img' as any;
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../config/constants';
 
@@ -32,9 +34,9 @@ export default function ConferenceFooter() {
   return (
     <View style={styles.footer}>
       <View style={styles.logosRow}>
-        <Image source={require('../../assets/logo-lagna.png')} style={styles.logo} resizeMode="contain" />
+        <Img src="/logo-lagna.png" style={imgStyles.footerLagna} />
         <Text style={styles.footerText}>لجنة خدمة ثانوى • أسقفية الشباب</Text>
-        <Image source={require('../../assets/logo-oskofia.png')} style={styles.logo} resizeMode="contain" />
+        <Img src="/logo-oskofia.png" style={imgStyles.footerOskofia} />
       </View>
       
       {/* Social Links */}
@@ -72,9 +74,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   logo: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 36,
+    height: 36,
   },
   footerText: {
     fontSize: 11,
@@ -102,3 +103,18 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 });
+
+const imgStyles = {
+  footerLagna: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    objectFit: 'contain' as const,
+  },
+  footerOskofia: {
+    width: 28,
+    height: 38,
+    borderRadius: 4,
+    objectFit: 'contain' as const,
+  },
+};

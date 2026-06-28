@@ -4,11 +4,12 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Image,
   TouchableOpacity,
   Linking,
   Platform,
 } from 'react-native';
+// @ts-ignore
+const Img = 'img' as any;
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../config/constants';
@@ -53,11 +54,7 @@ export default function InfoScreen() {
       >
 
        {/* Conference Logo */}
-        <Image
-          source={require('../../assets/logo-40years.png')}
-          style={styles.heroLogo}
-          resizeMode="contain"
-        />
+        <Img src="/logo-40years.png" style={imgStyles.hero} />
         {/* Conference Title */}
         <Text style={styles.headerTitle}>
           {lang === 'ar' ? '٤٠ عامًا' : '40 Years'}
@@ -229,9 +226,13 @@ const styles = StyleSheet.create({
   },
   heroLogo: {
     width: 200,
-    height: 200,
+    height: 210,
     marginBottom: 8,
     borderRadius: 24,
+    backgroundImage: 'url(/logo-40years.png)' as any,
+    backgroundSize: 'contain' as any,
+    backgroundRepeat: 'no-repeat' as any,
+    backgroundPosition: 'center' as any,
   },
   card: {
     backgroundColor: COLORS.surface,
@@ -341,3 +342,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
+const imgStyles = {
+  hero: {
+    width: 200,
+    height: 210,
+    marginBottom: 8,
+    borderRadius: 24,
+    objectFit: 'contain' as const,
+  },
+};

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+// @ts-ignore
+const Img = 'img' as any;
 import { COLORS } from '../config/constants';
 
 const { width, height } = Dimensions.get('window');
@@ -62,7 +64,7 @@ export default function LoadingScreen() {
       {/* Logo */}
       <Animated.View style={[styles.logoContainer, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
         <View style={styles.logoWrapper}>
-          <Image source={require('../../assets/logo-lagna.png')} style={styles.logo} resizeMode="contain" />
+          <Img src="/logo-lagna.png" style={loadingImgStyles.logo} />
         </View>
       </Animated.View>
 
@@ -208,3 +210,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+const loadingImgStyles = {
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    objectFit: 'contain' as const,
+  },
+};

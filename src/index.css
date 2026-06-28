@@ -53,3 +53,12 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
+
+/* Hide scrollbar inside modals — keep scroll functional */
+[role="dialog"] *::-webkit-scrollbar {
+  display: none;
+}
+[role="dialog"] * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}

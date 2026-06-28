@@ -11,9 +11,10 @@ import {
   UIManager,
   TextInput,
   Share,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+// @ts-ignore
+const Img = 'img' as any;
 import { Ionicons } from '@expo/vector-icons';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -196,8 +197,8 @@ export default function ProfileScreen() {
         >
           <View style={styles.shareCardHeader}>
             <View style={styles.shareCardLogos}>
-              <Image source={require('../../assets/logo-lagna.png')} style={styles.shareCardLogo} resizeMode="contain" />
-              <Image source={require('../../assets/logo-oskofia.png')} style={styles.shareCardLogo} resizeMode="contain" />
+              <Img src="/logo-lagna.png" style={profileImgStyles.cardLogo} />
+              <Img src="/logo-oskofia.png" style={profileImgStyles.cardLogoOskofia} />
             </View>
             <Text style={styles.shareCardBrand}>IKIGAI Quest 🏆</Text>
             <Text style={styles.shareCardJp}>生き甲斐</Text>
@@ -858,3 +859,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+const profileImgStyles = {
+  cardLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    objectFit: 'contain' as const,
+  },
+  cardLogoOskofia: {
+    width: 33,
+    height: 44,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    objectFit: 'contain' as const,
+  },
+};

@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+// @ts-ignore – native img works in Expo Web
+const Img = 'img' as any;
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING } from '../config/constants';
 import { useLang } from '../contexts/LangContext';
@@ -12,16 +14,12 @@ export default function ConferenceHeader() {
       style={styles.wrapper}
     >
       <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <Image source={require('../../assets/logo-lagna.png')} style={styles.logoImg} resizeMode="contain" />
-        </View>
+        <Img src="/logo-lagna.png" style={imgStyles.lagna} />
         <View style={styles.titleBlock}>
           <Text style={styles.title}>IKIGAI Quest</Text>
           <Text style={styles.japanese}>生き甲斐</Text>
         </View>
-        <View style={styles.logoContainer}>
-          <Image source={require('../../assets/logo-oskofia.png')} style={styles.logoImg} resizeMode="contain" />
-        </View>
+        <Img src="/logo-oskofia.png" style={imgStyles.oskofia} />
       </View>
       <View style={styles.banner}>
         <Text style={styles.bannerText}>
@@ -45,20 +43,8 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     gap: SPACING.lg,
   },
-  logoContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 3,
-  },
-  logoImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
+  lagnaLogo: {},
+  oskofiaLogo: {},
   titleBlock: {
     alignItems: 'center',
   },
@@ -89,3 +75,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+const imgStyles = {
+  lagna: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#ffffff',
+    objectFit: 'contain' as const,
+    padding: 4,
+  },
+  oskofia: {
+    width: 44,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    objectFit: 'contain' as const,
+    padding: 2,
+  },
+};

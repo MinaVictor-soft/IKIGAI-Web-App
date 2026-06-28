@@ -9,10 +9,11 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  Image,
   Animated,
   Dimensions,
 } from 'react-native';
+// @ts-ignore
+const Img = 'img' as any;
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -93,10 +94,10 @@ export default function LoginScreen() {
         {/* Logos with animation */}
         <Animated.View style={[styles.logosContainer, { transform: [{ scale: logoScale }] }]}>
           <View style={styles.logoWrapper}>
-            <Image source={require('../../assets/logo-lagna.png')} style={styles.logo} resizeMode="contain" />
+            <Img src="/logo-lagna.png" style={loginImgStyles.logo} />
           </View>
           <View style={styles.logoWrapper}>
-            <Image source={require('../../assets/logo-oskofia.png')} style={styles.logo} resizeMode="contain" />
+            <Img src="/logo-oskofia.png" style={loginImgStyles.logoOskofia} />
           </View>
         </Animated.View>
 
@@ -300,3 +301,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+const loginImgStyles = {
+  logo: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    objectFit: 'contain' as const,
+  },
+  logoOskofia: {
+    width: 50,
+    height: 66,
+    borderRadius: 8,
+    objectFit: 'contain' as const,
+  },
+};
