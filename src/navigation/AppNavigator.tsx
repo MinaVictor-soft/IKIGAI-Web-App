@@ -13,7 +13,6 @@ import { useViewed } from '../contexts/ViewedContext';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import ScannerScreen from '../screens/ScannerScreen';
@@ -29,7 +28,6 @@ import InfoScreen from '../screens/InfoScreen';
 
 export type RootStackParamList = {
   Login: undefined;
-  Register: undefined;
   Main: undefined;
   QuizPlay: { quizId: string; title: string };
 };
@@ -245,8 +243,4 @@ export default function AppNavigator() {
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
-
-function RegisterWrapper({ navigation }: any) {
-  return <RegisterScreen onBack={() => navigation.goBack()} />;
 }

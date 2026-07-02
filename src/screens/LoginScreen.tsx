@@ -18,7 +18,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../contexts/LangContext';
-import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../config/constants';
 
 const { width } = Dimensions.get('window');
@@ -26,7 +25,6 @@ const { width } = Dimensions.get('window');
 export default function LoginScreen() {
   const { login } = useAuth();
   const { t, isRTL, lang, setLang } = useLang();
-  const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -284,15 +282,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: SPACING.lg,
     fontSize: 12,
-  },
-  registerLink: {
-    alignItems: 'center',
-    marginTop: SPACING.md,
-  },
-  registerLinkText: {
-    color: COLORS.secondary,
-    fontSize: 14,
-    fontWeight: '500',
   },
 });
 
