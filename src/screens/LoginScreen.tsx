@@ -190,12 +190,6 @@ export default function LoginScreen() {
 
         <Text style={styles.footerText}>{t('useConferenceCredentials')}</Text>
 
-        {/* Register link */}
-        <TouchableOpacity style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.registerLinkText}>
-            {lang === 'ar' ? 'ليس لديك حساب؟ سجل الآن' : "Don't have an account? Sign up"}
-          </Text>
-        </TouchableOpacity>
       </LinearGradient>
     </KeyboardAvoidingView>
   );
