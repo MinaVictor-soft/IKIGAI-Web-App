@@ -187,6 +187,7 @@ export default function ProfileScreen() {
         <StatCard label={t('totalXpLabel')} value={currentUser?.totalXp || 0} icon="flash" color={COLORS.accent} />
         <StatCard label={t('level')} value={currentUser?.level?.name || t('none')} icon="shield" color={COLORS.primary} />
         <StatCard label={t('tribe')} value={currentUser?.tribe?.name || t('none')} icon="people" color={COLORS.success} />
+        <StatCard label={lang === 'ar' ? 'نقاط المكافآت' : 'Bonus XP'} value={breakdown.bonus} icon="gift" color="#f59e0b" />
       </View>
 
       {/* Share Progress Card (captured as image) */}

@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix camera/video blur on web */
+video {
+  object-fit: cover;
+  image-rendering: auto;
+  filter: none !important;
+}
+
 * {
   margin: 0;
   padding: 0;
