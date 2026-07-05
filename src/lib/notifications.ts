@@ -225,8 +225,8 @@ export const notificationService = {
 
 // Real-time event listener setup
 let eventListenerInterval: any = null;
-// Initialize 3 minutes in the past so notifications created just before app load are shown
-let lastEventCheckTime = new Date(Date.now() - 3 * 60 * 1000);
+// Initialize 10 minutes in the past so notifications created before app load are shown
+let lastEventCheckTime = new Date(Date.now() - 10 * 60 * 1000);
 let serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
 
 // Register Service Worker for background notifications
@@ -329,8 +329,8 @@ export const startEventListener = async (token: string, onNewEvent?: (event: any
     }
   };
 
-  // Check for new events every 5 seconds (ultra-fast real-time notifications when app is open)
-  eventListenerInterval = setInterval(checkForNewEvents, 5000);
+  // Check for new events every 3 seconds for near real-time notifications
+  eventListenerInterval = setInterval(checkForNewEvents, 3000);
   
   // Initial check
   await checkForNewEvents();
