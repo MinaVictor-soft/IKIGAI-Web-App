@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { Platform, View, Text, StyleSheet } from 'react-native';
-import { notificationService } from '../lib/notifications';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons as _Ionicons } from '@expo/vector-icons';
+import { notificationService, getNotificationPermissionState } from '../lib/notifications';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -74,6 +75,14 @@ const badgeStyles = StyleSheet.create({
   badgeText: { color: '#fff', fontSize: 9, fontWeight: 'bold' },
 });
 
+const notifBannerStyles = StyleSheet.create({
+  banner: { position: 'absolute' as any, top: 0, left: 0, right: 0, zIndex: 9999, flexDirection: 'row', alignItems: 'center', backgroundColor: '#1e293b', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#334155' },
+  text: { flex: 1, color: '#e2e8f0', fontSize: 12, textAlign: 'right', marginHorizontal: 8 },
+  allow: { backgroundColor: '#7c3aed', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 5, marginLeft: 6 },
+  allowText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  dismiss: { padding: 4, marginLeft: 4 },
+});
+
 function MainTabs() {
   const { t } = useLang();
   const { viewedPublicationIds } = useViewed();
@@ -91,13 +100,17 @@ function MainTabs() {
   const showSportsTab = adminSettings?.sportsTabVisibilityWeb ?? true;
   const showTournamentTab = adminSettings?.tournamentVisibilityWeb ?? true;
 
-  // Web push notifications — request permission once, detect new quizzes
+  // Web push notifications — permission banner + detect new quizzes
   const knownQuizIds = useRef<Set<string>>(new Set());
   const notifReady = useRef(false);
+  const [showNotifBanner, setShowNotifBanner] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      notificationService.requestPermission().catch(() => {});
+    if (Platform.OS !== 'web') return;
+    const state = getNotificationPermissionState();
+    // Show banner if permission hasn't been decided yet
+    if (state === 'default') {
+      setShowNotifBanner(true);
     }
   }, []);
 
@@ -154,7 +167,29 @@ function MainTabs() {
     }
   };
 
+  const handleAllowNotifications = async () => {
+    setShowNotifBanner(false);
+    const granted = await notificationService.requestPermission();
+    if (!granted) {
+      // Permission denied — nothing more we can do
+    }
+  };
+
   return (
+    <>
+      {/* Notification permission banner for mobile browsers */}
+      {showNotifBanner && Platform.OS === 'web' && (
+        <View style={notifBannerStyles.banner}>
+          <_Ionicons name="notifications-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={notifBannerStyles.text}>فعّل الإشعارات لتصلك التحديثات حتى عند إغلاق التطبيق</Text>
+          <TouchableOpacity onPress={handleAllowNotifications} style={notifBannerStyles.allow}>
+            <Text style={notifBannerStyles.allowText}>تفعيل</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowNotifBanner(false)} style={notifBannerStyles.dismiss}>
+            <_Ionicons name="close" size={18} color="#aaa" />
+          </TouchableOpacity>
+        </View>
+      )}
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={({ route }) => ({
@@ -212,6 +247,7 @@ function MainTabs() {
       <Tab.Screen name="Scan" component={ScannerScreen} options={{ tabBarLabel: t('scanQr') }} />
       <Tab.Screen name="Info" component={InfoScreen} options={{ tabBarLabel: 'Info' }} />
     </Tab.Navigator>
+    </>
   );
 }
 

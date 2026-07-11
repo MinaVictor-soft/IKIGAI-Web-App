@@ -1,22 +1,61 @@
 // Service Worker for background notifications
-// Runs even when the tab is closed
+// Handles both polling (while app is open) and Web Push (when browser is closed)
 
-const NOTIFICATION_INTERVAL = 10000; // Check every 10 seconds
+const NOTIFICATION_INTERVAL = 10000;
 const API_BASE_URL = 'https://ikigai-backend.replit.app/api/v1';
 
 let lastEventCheckTime = new Date();
 let token = null;
 
-// Handle incoming messages from the main app
+// ─── Handle messages from the main app ───────────────────────────────────────
+
 self.addEventListener('message', (event) => {
   if (event.data.type === 'SET_TOKEN') {
     token = event.data.token;
-    console.log('Service Worker: Received auth token');
     startNotificationPoller();
   }
 });
 
-// Check for new notifications
+// ─── Web Push: fired by the server even when browser/tab is closed ────────────
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { title: '🔔 إشعار جديد', body: event.data ? event.data.text() : '' };
+  }
+
+  const title = data.title || '🔔 IKIGAI Quest';
+  const options = {
+    body: data.body || '',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
+    tag: data.tag || 'push',
+    requireInteraction: true,
+    data: data,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// ─── Notification click: open/focus the app ───────────────────────────────────
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (let client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('/');
+    })
+  );
+});
+
+// ─── Polling (while app is open or tab is in background) ─────────────────────
+
 async function checkForNotifications() {
   if (!token) return;
 
@@ -28,10 +67,7 @@ async function checkForNotifications() {
       },
     });
 
-    if (!response.ok) {
-      console.log('Service Worker: Notification fetch failed');
-      return;
-    }
+    if (!response.ok) return;
 
     const data = await response.json();
     const notifications = data.data || [];
@@ -39,7 +75,6 @@ async function checkForNotifications() {
     for (const notification of notifications) {
       const notificationTime = new Date(notification.createdAt);
       if (notificationTime > lastEventCheckTime) {
-        // Show notification based on type
         const notifData = getNotificationData(notification);
         await self.registration.showNotification(notifData.title, notifData.options);
       }
@@ -47,11 +82,10 @@ async function checkForNotifications() {
 
     lastEventCheckTime = new Date();
   } catch (error) {
-    console.error('Service Worker: Error checking notifications:', error);
+    // Silently fail
   }
 }
 
-// Get notification title and options based on type
 function getNotificationData(notification) {
   const defaultOptions = {
     icon: '/favicon.ico',
@@ -63,121 +97,52 @@ function getNotificationData(notification) {
     case 'QUIZ_CREATED':
       return {
         title: '🎯 مسابقة جديدة!',
-        options: {
-          body: `${notification.data?.title || 'New Quiz'} • ${notification.data?.xpReward || 0} XP`,
-          tag: 'new-quiz',
-          ...defaultOptions,
-        },
+        options: { body: `${notification.data?.title || 'New Quiz'} • ${notification.data?.xpReward || 0} XP`, tag: 'new-quiz', ...defaultOptions },
       };
-
     case 'EVENT_CREATED':
       return {
         title: '📅 حدث جديد!',
-        options: {
-          body: `${notification.data?.title || 'New Event'}`,
-          tag: 'new-event',
-          ...defaultOptions,
-        },
+        options: { body: notification.data?.title || 'New Event', tag: 'new-event', ...defaultOptions },
       };
-
     case 'MATCH_CREATED':
       return {
         title: '⚽ مباراة جديدة!',
-        options: {
-          body: `${notification.data?.title || 'New Match'} • ${notification.data?.sport || 'Sports'}`,
-          tag: 'new-match',
-          ...defaultOptions,
-        },
+        options: { body: `${notification.data?.title || 'New Match'} • ${notification.data?.sport || 'Sports'}`, tag: 'new-match', ...defaultOptions },
       };
-
     case 'MATCH_LIVE':
       return {
         title: '🔴 المباراة مباشرة الآن!',
-        options: {
-          body: notification.data?.title || 'Match Starting',
-          tag: 'match-live',
-          ...defaultOptions,
-        },
+        options: { body: notification.data?.title || 'Match Starting', tag: 'match-live', ...defaultOptions },
       };
-
     case 'PUBLICATION_CREATED':
       return {
         title: '📰 منشور جديد!',
-        options: {
-          body: `${notification.data?.title || 'New Publication'} بقلم ${notification.data?.author || 'Unknown'}`,
-          tag: 'new-publication',
-          ...defaultOptions,
-        },
+        options: { body: `${notification.data?.title || 'New Publication'} بقلم ${notification.data?.author || 'Unknown'}`, tag: 'new-publication', ...defaultOptions },
       };
-
     case 'ACHIEVEMENT_EARNED':
       return {
         title: '🎉 إنجاز جديد!',
-        options: {
-          body: notification.data?.achievement || 'Achievement Unlocked',
-          tag: 'achievement',
-          ...defaultOptions,
-        },
+        options: { body: notification.data?.achievement || 'Achievement Unlocked', tag: 'achievement', ...defaultOptions },
       };
-
     case 'LEVEL_UP':
       return {
         title: '⬆️ ارتقاء مستوى!',
-        options: {
-          body: notification.data?.levelName || 'Level Up',
-          tag: 'level-up',
-          ...defaultOptions,
-        },
+        options: { body: notification.data?.levelName || 'Level Up', tag: 'level-up', ...defaultOptions },
       };
-
     default:
       return {
         title: '🔔 إشعار جديد',
-        options: {
-          body: notification.data?.message || 'New notification',
-          tag: 'general',
-          ...defaultOptions,
-        },
+        options: { body: notification.data?.message || '', tag: 'general', ...defaultOptions },
       };
   }
 }
 
-// Start polling for notifications
 function startNotificationPoller() {
-  // Check immediately
   checkForNotifications();
-
-  // Then check every 10 seconds
   setInterval(checkForNotifications, NOTIFICATION_INTERVAL);
 }
 
-// Handle notification click
-self.addEventListener('click', (event) => {
-  event.notification.close();
+// ─── Lifecycle ────────────────────────────────────────────────────────────────
 
-  // Open the app when notification is clicked
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (let client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow('/');
-      }
-    })
-  );
-});
-
-// Activate service worker
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activated');
-  event.waitUntil(clients.claim());
-});
-
-// Install service worker
-self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing');
-  self.skipWaiting();
-});
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));

@@ -1,6 +1,8 @@
 import api from './api';
 import { Platform } from 'react-native';
 
+const API_BASE = 'https://ikigai-backend.replit.app/api/v1';
+
 // Conditionally import react-hot-toast only on web
 let toast: any = null;
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -39,21 +41,12 @@ const playNotificationSound = () => {
   }
 };
 
-// Web Notifications API for desktop, toast fallback for mobile
-const requestNotificationPermission = async () => {
-  if (isMobileBrowser()) {
-    // Mobile browsers don't need notification permission for in-app toasts
-    return true;
-  }
+// Request notification permission — works on all browsers including mobile
+const requestNotificationPermission = async (): Promise<boolean> => {
+  if (typeof window === 'undefined') return false;
+  if (!('Notification' in window)) return false;
 
-  if (!('Notification' in window)) {
-    console.log('This browser does not support notifications');
-    return false;
-  }
-
-  if (Notification.permission === 'granted') {
-    return true;
-  }
+  if (Notification.permission === 'granted') return true;
 
   if (Notification.permission !== 'denied') {
     try {
@@ -68,16 +61,22 @@ const requestNotificationPermission = async () => {
   return false;
 };
 
+// Returns current permission state without prompting
+export const getNotificationPermissionState = (): 'granted' | 'denied' | 'default' | 'unsupported' => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return 'unsupported';
+  if (!('Notification' in window)) return 'unsupported';
+  return Notification.permission;
+};
+
 const sendNotification = (title: string, options?: NotificationOptions) => {
   const isMobile = isMobileBrowser();
   const body = (options as any)?.body || '';
   const message = body ? `${title}\n${body}` : title;
 
-  // For mobile browsers, use in-app toast + sound
+  // For mobile browsers, use in-app toast + sound (permission may not be reliable there)
   if (isMobile) {
     playNotificationSound();
     
-    // Show toast notification with longer duration for important notifications
     if (toast && typeof toast.success === 'function') {
       const duration = (options as any)?.requireInteraction ? 5000 : 3000;
       toast.success(message, {
@@ -94,17 +93,13 @@ const sendNotification = (title: string, options?: NotificationOptions) => {
         position: 'top-center',
       });
     } else {
-      // Fallback: log to console if toast not available
       console.log('Notification:', message);
     }
     return;
   }
 
   // For desktop, use Web Notifications API
-  if (!('Notification' in window)) {
-    console.log('This browser does not support notifications');
-    return;
-  }
+  if (!('Notification' in window)) return;
 
   if (Notification.permission === 'granted') {
     try {
@@ -223,52 +218,91 @@ export const notificationService = {
   },
 };
 
-// Real-time event listener setup
+// ─── Web Push helpers ────────────────────────────────────────────────────────
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+const registerWebPush = async (registration: ServiceWorkerRegistration, authToken: string) => {
+  try {
+    if (!('PushManager' in window)) {
+      console.log('Web Push not supported in this browser');
+      return;
+    }
+
+    // 1. Get VAPID public key from backend
+    const res = await fetch(`${API_BASE}/push-notifications/vapid-public-key`);
+    if (!res.ok) return;
+    const json = await res.json();
+    const vapidPublicKey: string = json?.data?.publicKey;
+    if (!vapidPublicKey) return;
+
+    // 2. Re-use existing subscription or create a new one
+    const existing = await registration.pushManager.getSubscription();
+    const subscription = existing ?? await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+
+    // 3. Send subscription to backend
+    await fetch(`${API_BASE}/push-notifications/web-subscribe`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ subscription }),
+    });
+
+    console.log('Web Push subscription registered ✓');
+  } catch (error) {
+    console.log('Web Push registration skipped:', error);
+  }
+};
+
+// ─── Service Worker + polling setup ──────────────────────────────────────────
+
 let eventListenerInterval: any = null;
-// Initialize 10 minutes in the past so notifications created before app load are shown
 let lastEventCheckTime = new Date(Date.now() - 10 * 60 * 1000);
 let serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
 
-// Register Service Worker for background notifications
 const registerServiceWorker = async (token: string) => {
-  if (!('serviceWorker' in navigator)) {
-    console.log('Service Workers not supported');
-    return;
-  }
+  if (!('serviceWorker' in navigator)) return;
 
   try {
     serviceWorkerRegistration = await navigator.serviceWorker.register('/service-worker.js', {
       scope: '/',
     });
 
-    console.log('Service Worker registered successfully');
+    console.log('Service Worker registered ✓');
 
-    // Send token to service worker so it can authenticate with backend
+    const sendToken = (sw: ServiceWorker) => sw.postMessage({ type: 'SET_TOKEN', token });
+
     if (serviceWorkerRegistration.active) {
-      serviceWorkerRegistration.active.postMessage({
-        type: 'SET_TOKEN',
-        token: token,
-      });
+      sendToken(serviceWorkerRegistration.active);
     }
 
-    // Also send token when controller changes (e.g., on first registration)
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'SET_TOKEN',
-          token: token,
-        });
+        sendToken(navigator.serviceWorker.controller);
       }
     });
+
+    // Register Web Push after service worker is ready
+    await registerWebPush(serviceWorkerRegistration, token);
+
   } catch (error) {
     console.error('Service Worker registration failed:', error);
   }
 };
 
 export const startEventListener = async (token: string, onNewEvent?: (event: any) => void) => {
-  if (eventListenerInterval) return; // Already running
+  if (eventListenerInterval) return;
 
-  // Register service worker for background notifications
   await registerServiceWorker(token);
 
   const checkForNewEvents = async () => {
@@ -279,12 +313,10 @@ export const startEventListener = async (token: string, onNewEvent?: (event: any
 
       const notifications = response.data.data || [];
       for (const notification of notifications) {
-        // Check if this notification is newer than last check
         const notificationTime = new Date(notification.createdAt);
         if (notificationTime > lastEventCheckTime) {
           onNewEvent?.(notification);
           
-          // Send appropriate web notification based on notification type
           switch (notification.type) {
             case 'QUIZ_CREATED':
               notificationService.notifyNewQuiz(
@@ -329,10 +361,7 @@ export const startEventListener = async (token: string, onNewEvent?: (event: any
     }
   };
 
-  // Check for new events every 3 seconds for near real-time notifications
   eventListenerInterval = setInterval(checkForNewEvents, 3000);
-  
-  // Initial check
   await checkForNewEvents();
 };
 
