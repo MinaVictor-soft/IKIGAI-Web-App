@@ -109,9 +109,10 @@ function MainTabs() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const state = getNotificationPermissionState();
-    const dismissed = typeof localStorage !== 'undefined' && localStorage.getItem('notif_banner_dismissed');
-    // Show only if browser hasn't decided AND user hasn't dismissed before
-    if (state === 'default' && !dismissed) {
+    // If permission is still 'default' (never decided), ALWAYS show the banner —
+    // dismissed flag is ignored because the user still hasn't subscribed.
+    // Only suppress if they already granted or denied at the browser level.
+    if (state === 'default') {
       setShowNotifBanner(true);
     }
   }, []);
