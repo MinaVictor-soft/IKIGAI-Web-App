@@ -290,11 +290,13 @@ const registerServiceWorker = async (token: string) => {
   if (!('serviceWorker' in navigator)) return;
 
   try {
-    serviceWorkerRegistration = await navigator.serviceWorker.register('/service-worker.js', {
-      scope: '/',
-    });
+    // Start registration, then wait for the SW to reach active state.
+    // navigator.serviceWorker.ready resolves only when a SW is active —
+    // calling pushManager.subscribe() before that throws InvalidStateError.
+    await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+    serviceWorkerRegistration = await navigator.serviceWorker.ready;
 
-    console.log('Service Worker registered ✓');
+    console.log('Service Worker active ✓');
 
     const sendToken = (sw: ServiceWorker) => sw.postMessage({ type: 'SET_TOKEN', token });
 
@@ -308,7 +310,6 @@ const registerServiceWorker = async (token: string) => {
       }
     });
 
-    // Register Web Push after service worker is ready
     await registerWebPush(serviceWorkerRegistration, token);
 
   } catch (error) {
@@ -322,10 +323,11 @@ export const subscribeWebPush = async (token: string): Promise<void> => {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
   if (!('serviceWorker' in navigator)) return;
   try {
-    const registration = serviceWorkerRegistration
-      ?? await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
-    if (!serviceWorkerRegistration) serviceWorkerRegistration = registration;
-    await registerWebPush(registration, token);
+    // Register (no-op if already registered) then wait for active state.
+    // This is safe in incognito and on first load — ready resolves once active.
+    await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+    serviceWorkerRegistration = await navigator.serviceWorker.ready;
+    await registerWebPush(serviceWorkerRegistration, token);
   } catch (error) {
     console.error('subscribeWebPush failed:', error);
   }
