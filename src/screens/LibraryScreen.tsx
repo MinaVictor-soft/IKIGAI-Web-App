@@ -248,42 +248,65 @@ export default function LibraryScreen() {
         />
       )}
 
-      {/* In-app Viewer Modal */}
-      <Modal visible={!!viewerUrl} animationType="slide" onRequestClose={() => setViewerUrl(null)}>
-        <View style={styles.viewerContainer}>
-          <View style={styles.viewerHeader}>
-            <TouchableOpacity onPress={() => setViewerUrl(null)} style={styles.viewerCloseBtn}>
-              <Ionicons name="arrow-back" size={22} color={COLORS.text} />
-            </TouchableOpacity>
-            <Text style={styles.viewerTitle} numberOfLines={1}>{viewerTitle}</Text>
-            <TouchableOpacity onPress={() => { if (viewerUrl) Linking.openURL(viewerUrl); }} style={styles.viewerExternalBtn}>
-              <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          </View>
-          {viewerUrl && viewerType === 'image' && Platform.OS === 'web' && (
-            <View style={styles.webview}>
-              {/* @ts-ignore */}
-              <img src={viewerUrl} style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#000' }} alt={viewerTitle} />
+      {/* In-app Viewer Overlay */}
+      {!!viewerUrl && Platform.OS === 'web' && (
+        <Pressable style={styles.webOverlay} onPress={() => setViewerUrl(null)}>
+          <View style={styles.webOverlayInner} onStartShouldSetResponder={() => true}>
+            <View style={styles.viewerHeader}>
+              <TouchableOpacity onPress={() => setViewerUrl(null)} style={styles.viewerCloseBtn}>
+                <Ionicons name="arrow-back" size={22} color={COLORS.text} />
+              </TouchableOpacity>
+              <Text style={styles.viewerTitle} numberOfLines={1}>{viewerTitle}</Text>
+              <TouchableOpacity onPress={() => { if (viewerUrl) Linking.openURL(viewerUrl); }} style={styles.viewerExternalBtn}>
+                <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
             </View>
-          )}
-          {viewerUrl && viewerType === 'image' && Platform.OS !== 'web' && (
-            <Image source={{ uri: viewerUrl }} style={styles.webview} resizeMode="contain" />
-          )}
-          {viewerUrl && viewerType !== 'image' && (
-            <WebView
-              source={{ uri: viewerUrl }}
-              style={styles.webview}
-              startInLoadingState
-              renderLoading={() => (
-                <View style={styles.webviewLoading}>
-                  <ActivityIndicator color={COLORS.primary} size="large" />
-                  <Text style={styles.loadingText}>Loading document...</Text>
-                </View>
-              )}
-            />
-          )}
-        </View>
-      </Modal>
+            {viewerType === 'image' ? (
+              <View style={styles.webview}>
+                {/* @ts-ignore */}
+                <img src={viewerUrl} style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#000' }} alt={viewerTitle} />
+              </View>
+            ) : (
+              <View style={styles.webview}>
+                {/* @ts-ignore */}
+                <iframe src={viewerUrl} style={{ width: '100%', height: '100%', border: 'none' }} title={viewerTitle} />
+              </View>
+            )}
+          </View>
+        </Pressable>
+      )}
+
+      {/* Native Modal Viewer */}
+      {!!viewerUrl && Platform.OS !== 'web' && (
+        <Modal visible={!!viewerUrl} animationType="slide" onRequestClose={() => setViewerUrl(null)}>
+          <View style={styles.viewerContainer}>
+            <View style={styles.viewerHeader}>
+              <TouchableOpacity onPress={() => setViewerUrl(null)} style={styles.viewerCloseBtn}>
+                <Ionicons name="arrow-back" size={22} color={COLORS.text} />
+              </TouchableOpacity>
+              <Text style={styles.viewerTitle} numberOfLines={1}>{viewerTitle}</Text>
+              <TouchableOpacity onPress={() => { if (viewerUrl) Linking.openURL(viewerUrl); }} style={styles.viewerExternalBtn}>
+                <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
+            {viewerType === 'image' ? (
+              <Image source={{ uri: viewerUrl }} style={styles.webview} resizeMode="contain" />
+            ) : (
+              <WebView
+                source={{ uri: viewerUrl }}
+                style={styles.webview}
+                startInLoadingState
+                renderLoading={() => (
+                  <View style={styles.webviewLoading}>
+                    <ActivityIndicator color={COLORS.primary} size="large" />
+                    <Text style={styles.loadingText}>Loading document...</Text>
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -318,6 +341,9 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary + '15', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
   emptySubtitle: { fontSize: 14, color: COLORS.textMuted, marginTop: 6, textAlign: 'center' },
+  // Web overlay (replaces Modal on web)
+  webOverlay: { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' },
+  webOverlayInner: { width: '95%' as any, height: '90%' as any, backgroundColor: COLORS.background, borderRadius: 12, overflow: 'hidden' },
   // Viewer
   viewerContainer: { flex: 1, backgroundColor: COLORS.background },
   viewerHeader: { flexDirection: 'row', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 54 : 30, paddingBottom: 12, paddingHorizontal: 16, backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
