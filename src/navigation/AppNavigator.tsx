@@ -189,16 +189,26 @@ function MainTabs() {
     }
   };
 
+  const [notifStatus, setNotifStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [notifError, setNotifError] = useState('');
+
   const handleAllowNotifications = async () => {
-    setShowNotifBanner(false);
+    setNotifStatus('loading');
     const granted = await notificationService.requestPermission();
-    if (!granted) return;
-    // Permission just granted — register Web Push subscription immediately
+    if (!granted) {
+      setNotifStatus('idle');
+      return;
+    }
     try {
       const token = await getAccessToken();
-      if (token) await subscribeWebPush(token);
-    } catch (e) {
-      console.error('Failed to subscribe to Web Push:', e);
+      if (!token) throw new Error('Not logged in — no access token');
+      await subscribeWebPush(token);
+      setShowNotifBanner(false);
+      setNotifStatus('success');
+    } catch (e: any) {
+      console.error('[Push ERROR]', e);
+      setNotifStatus('error');
+      setNotifError(e?.message || 'Unknown error');
     }
   };
 
@@ -212,15 +222,28 @@ function MainTabs() {
           </TouchableOpacity>
           <View style={notifBannerStyles.bannerRow}>
             <View style={notifBannerStyles.bannerIcon}>
-              <_Ionicons name="notifications" size={22} color="#fff" />
+              <_Ionicons name={notifStatus === 'success' ? 'checkmark-circle' : notifStatus === 'error' ? 'alert-circle' : 'notifications'} size={22} color="#fff" />
             </View>
-            <Text style={notifBannerStyles.text}>فعّل الإشعارات لتصلك التحديثات حتى عند إغلاق التطبيق</Text>
+            <Text style={notifBannerStyles.text}>
+              {notifStatus === 'loading' ? 'جارٍ التفعيل…' :
+               notifStatus === 'success' ? '✓ تم تفعيل الإشعارات' :
+               notifStatus === 'error' ? `فشل: ${notifError}` :
+               'فعّل الإشعارات لتصلك التحديثات حتى عند إغلاق التطبيق'}
+            </Text>
           </View>
-          <View style={{ flexDirection: 'row' }}>
-            <TouchableOpacity onPress={handleAllowNotifications} style={notifBannerStyles.allow}>
-              <Text style={notifBannerStyles.allowText}>🔔 تفعيل الإشعارات</Text>
-            </TouchableOpacity>
-          </View>
+          {notifStatus !== 'success' && (
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity
+                onPress={handleAllowNotifications}
+                style={[notifBannerStyles.allow, notifStatus === 'loading' && { opacity: 0.6 }]}
+                disabled={notifStatus === 'loading'}
+              >
+                <Text style={notifBannerStyles.allowText}>
+                  {notifStatus === 'loading' ? '…' : notifStatus === 'error' ? '↺ حاول مجدداً' : '🔔 تفعيل الإشعارات'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 

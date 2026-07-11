@@ -243,29 +243,44 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
-const registerWebPush = async (registration: ServiceWorkerRegistration, authToken: string) => {
+// Returns true on success, throws a descriptive Error on any failure.
+const registerWebPush = async (registration: ServiceWorkerRegistration, authToken: string): Promise<boolean> => {
+  console.log('[Push 1/5] registerWebPush called. authToken present:', !!authToken);
+
+  if (!('PushManager' in window)) {
+    throw new Error('PushManager not supported in this browser');
+  }
+  console.log('[Push 2/5] PushManager supported ✓');
+
+  // 1. Get VAPID public key from backend
+  let vapidPublicKey: string;
   try {
-    if (!('PushManager' in window)) {
-      console.log('Web Push not supported in this browser');
-      return;
-    }
-
-    // 1. Get VAPID public key from backend
     const res = await fetch(`${API_BASE}/push-notifications/vapid-public-key`);
-    if (!res.ok) return;
     const json = await res.json();
-    const vapidPublicKey: string = json?.data?.publicKey;
-    if (!vapidPublicKey) return;
+    vapidPublicKey = json?.data?.publicKey;
+    console.log('[Push 3/5] VAPID key fetched:', vapidPublicKey ? vapidPublicKey.substring(0, 20) + '…' : 'MISSING');
+    if (!vapidPublicKey) throw new Error('Backend returned no VAPID key');
+  } catch (err: any) {
+    throw new Error('VAPID key fetch failed: ' + err.message);
+  }
 
-    // 2. Re-use existing subscription or create a new one
+  // 2. Re-use existing subscription or create a new one
+  let subscription: PushSubscription;
+  try {
     const existing = await registration.pushManager.getSubscription();
-    const subscription = existing ?? await registration.pushManager.subscribe({
+    console.log('[Push 4/5] Existing subscription:', existing ? existing.endpoint.substring(0, 40) + '…' : 'none — creating new');
+    subscription = existing ?? await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });
+    console.log('[Push 4/5] Subscription endpoint:', subscription.endpoint.substring(0, 50) + '…');
+  } catch (err: any) {
+    throw new Error('pushManager.subscribe() failed: ' + err.message);
+  }
 
-    // 3. Send subscription to backend
-    await fetch(`${API_BASE}/push-notifications/web-subscribe`, {
+  // 3. Send subscription to backend
+  try {
+    const postRes = await fetch(`${API_BASE}/push-notifications/web-subscribe`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
@@ -273,11 +288,15 @@ const registerWebPush = async (registration: ServiceWorkerRegistration, authToke
       },
       body: JSON.stringify({ subscription }),
     });
-
-    console.log('Web Push subscription registered ✓');
-  } catch (error) {
-    console.log('Web Push registration skipped:', error);
+    const postJson = await postRes.json().catch(() => ({}));
+    console.log('[Push 5/5] Backend response:', postRes.status, JSON.stringify(postJson).substring(0, 100));
+    if (!postRes.ok) throw new Error(`Backend returned ${postRes.status}: ${JSON.stringify(postJson)}`);
+  } catch (err: any) {
+    throw new Error('web-subscribe POST failed: ' + err.message);
   }
+
+  console.log('[Push ✓] Web Push subscription saved to backend successfully');
+  return true;
 };
 
 // ─── Service Worker + polling setup ──────────────────────────────────────────
@@ -319,18 +338,16 @@ const registerServiceWorker = async (token: string) => {
 
 // Call this after the user grants notification permission to register the Web Push subscription.
 // Safe to call multiple times — reuses existing subscription if already subscribed.
+// Throws on failure so callers can show error feedback.
 export const subscribeWebPush = async (token: string): Promise<void> => {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-  if (!('serviceWorker' in navigator)) return;
-  try {
-    // Register (no-op if already registered) then wait for active state.
-    // This is safe in incognito and on first load — ready resolves once active.
-    await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
-    serviceWorkerRegistration = await navigator.serviceWorker.ready;
-    await registerWebPush(serviceWorkerRegistration, token);
-  } catch (error) {
-    console.error('subscribeWebPush failed:', error);
-  }
+  if (!('serviceWorker' in navigator)) throw new Error('serviceWorker not supported');
+  console.log('[Push SW] Registering service worker…');
+  await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+  console.log('[Push SW] Waiting for active state…');
+  serviceWorkerRegistration = await navigator.serviceWorker.ready;
+  console.log('[Push SW] Service worker active ✓');
+  await registerWebPush(serviceWorkerRegistration, token);
 };
 
 export const startEventListener = async (token: string, onNewEvent?: (event: any) => void) => {
