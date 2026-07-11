@@ -108,8 +108,9 @@ function MainTabs() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const state = getNotificationPermissionState();
-    // Show banner if permission hasn't been decided yet
-    if (state === 'default') {
+    const dismissed = typeof localStorage !== 'undefined' && localStorage.getItem('notif_banner_dismissed');
+    // Show only if browser hasn't decided AND user hasn't dismissed before
+    if (state === 'default' && !dismissed) {
       setShowNotifBanner(true);
     }
   }, []);
@@ -185,7 +186,7 @@ function MainTabs() {
           <TouchableOpacity onPress={handleAllowNotifications} style={notifBannerStyles.allow}>
             <Text style={notifBannerStyles.allowText}>تفعيل</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowNotifBanner(false)} style={notifBannerStyles.dismiss}>
+          <TouchableOpacity onPress={() => { setShowNotifBanner(false); localStorage.setItem('notif_banner_dismissed', '1'); }} style={notifBannerStyles.dismiss}>
             <_Ionicons name="close" size={18} color="#aaa" />
           </TouchableOpacity>
         </View>
