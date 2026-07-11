@@ -1,8 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons as _Ionicons } from '@expo/vector-icons';
-import { notificationService, getNotificationPermissionState, subscribeWebPush } from '../lib/notifications';
-import { getAccessToken } from '../lib/storage';
+import React, { useEffect, useRef } from 'react';
+import { Platform, View, StyleSheet } from 'react-native';
+import { notificationService } from '../lib/notifications';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -76,30 +74,6 @@ const badgeStyles = StyleSheet.create({
   badgeText: { color: '#fff', fontSize: 9, fontWeight: 'bold' },
 });
 
-const notifBannerStyles = StyleSheet.create({
-  banner: { position: 'absolute' as any, bottom: 80, left: 12, right: 12, zIndex: 9999, backgroundColor: '#4c1d95', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 12, borderWidth: 1, borderColor: '#7c3aed' },
-  bannerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  bannerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  bannerIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#7c3aed', justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
-  text: { flex: 1, color: '#ede9fe', fontSize: 14, textAlign: 'right', lineHeight: 20, fontWeight: '600' },
-  allow: { backgroundColor: '#fff', borderRadius: 10, paddingVertical: 12, alignItems: 'center', flex: 1 },
-  allowText: { color: '#4c1d95', fontSize: 14, fontWeight: '800' },
-  dismiss: { padding: 8, marginLeft: 4 },
-  // Denied-state guide modal
-  overlay: { position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  card: { backgroundColor: '#1e293b', borderRadius: 16, padding: 24, width: '100%', maxWidth: 380, borderWidth: 1, borderColor: '#334155' },
-  cardTitle: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 6 },
-  cardSubtitle: { color: '#94a3b8', fontSize: 13, textAlign: 'center', marginBottom: 20 },
-  step: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14, gap: 12 },
-  stepNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#7c3aed', justifyContent: 'center', alignItems: 'center' },
-  stepNumText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  stepText: { flex: 1, color: '#e2e8f0', fontSize: 13, lineHeight: 20, textAlign: 'right' },
-  stepHighlight: { color: '#a78bfa', fontWeight: '700' },
-  refreshBtn: { backgroundColor: '#7c3aed', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  refreshBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  closeGuide: { marginTop: 12, alignItems: 'center' },
-  closeGuideText: { color: '#64748b', fontSize: 13 },
-});
 
 function MainTabs() {
   const { t } = useLang();
@@ -118,28 +92,9 @@ function MainTabs() {
   const showSportsTab = adminSettings?.sportsTabVisibilityWeb ?? true;
   const showTournamentTab = adminSettings?.tournamentVisibilityWeb ?? true;
 
-  // Web push notifications — permission banner + detect new quizzes
+  // Detect new quizzes for badge counts
   const knownQuizIds = useRef<Set<string>>(new Set());
   const notifReady = useRef(false);
-  const [showNotifBanner, setShowNotifBanner] = useState(false);
-  const [showNotifGuide, setShowNotifGuide] = useState(false);
-  const [showStepsModal, setShowStepsModal] = useState(false);
-  // In-app push log panel
-  const [pushLogs, setPushLogs] = useState<string[]>([]);
-  const [showPushLogs, setShowPushLogs] = useState(false);
-  const addLog = (msg: string) => {
-    console.log(msg);
-    setPushLogs(prev => [...prev.slice(-19), msg]);
-  };
-
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const state = getNotificationPermissionState();
-    if (state === 'default') {
-      setShowNotifBanner(true);
-    }
-    // denied state: show nothing — browser already blocked, no need to nag
-  }, []);
 
   useEffect(() => {
     if (!quizzes) return;
@@ -194,156 +149,8 @@ function MainTabs() {
     }
   };
 
-  const [notifStatus, setNotifStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [notifError, setNotifError] = useState('');
-
-  const handleAllowNotifications = async () => {
-    // On *.replit.dev Chrome silently blocks all notification permission calls —
-    // detect this early and redirect the user to the production domain instead.
-    // Detect incognito by storage quota (Chrome incognito caps at ~120 MB)
-    let incognito = false;
-    try {
-      if (navigator.storage && navigator.storage.estimate) {
-        const { quota } = await navigator.storage.estimate();
-        if (quota !== undefined && quota < 130 * 1024 * 1024) incognito = true;
-      }
-    } catch {}
-
-    if (incognito) {
-      setNotifStatus('error');
-      setNotifError('وضع التصفح الخفي يمنع الإشعارات — افتح نافذة Chrome عادية');
-      return;
-    }
-
-    // On *.replit.dev Chrome silently blocks all notification permission calls
-    if (typeof window !== 'undefined' && window.location.hostname.endsWith('.replit.dev')) {
-      setNotifStatus('error');
-      setNotifError('افتح التطبيق على ikigai-web-app.replit.app لتفعيل الإشعارات');
-      return;
-    }
-
-    // Call requestPermission() FIRST — before any setState — so the browser
-    // still considers this a direct user gesture
-    const granted = await notificationService.requestPermission();
-    const permAfter = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
-
-    setShowPushLogs(true);
-    setPushLogs([]);
-    setNotifStatus('loading');
-    try {
-      addLog('① طلب إذن الإشعارات…');
-      addLog(`② النتيجة: ${granted ? '✓ ممنوح' : '✗ مرفوض'} — الحالة: ${permAfter}`);
-
-      if (!granted) {
-        setNotifStatus('error');
-        setNotifError('لم يتم منح الإذن — تحقق من إعدادات المتصفح');
-        return;
-      }
-
-      addLog('③ جارٍ تسجيل Service Worker…');
-      const token = await getAccessToken();
-      if (!token) throw new Error('لا يوجد access token — سجّل الدخول أولاً');
-      addLog('④ token موجود — جارٍ الاشتراك في Push…');
-      await subscribeWebPush(token);
-      addLog('⑤ ✓ تم الاشتراك وإرسال البيانات للخادم');
-      setShowNotifBanner(false);
-      setNotifStatus('success');
-    } catch (e: any) {
-      const msg = e?.message || 'خطأ غير معروف';
-      addLog(`✗ فشل: ${msg}`);
-      setNotifStatus('error');
-      setNotifError(msg);
-    }
-  };
 
   return (
-    <>
-      {/* Notification permission banner — shown when permission is 'default' */}
-      {showNotifBanner && Platform.OS === 'web' && (
-        <View style={notifBannerStyles.banner}>
-          {/* Header row: icon + text + X — all in normal flow, no absolute */}
-          <View style={notifBannerStyles.bannerHeader}>
-            <View style={notifBannerStyles.bannerIcon}>
-              <_Ionicons name={notifStatus === 'success' ? 'checkmark-circle' : notifStatus === 'error' ? 'alert-circle' : 'notifications'} size={22} color="#fff" />
-            </View>
-            <Text style={notifBannerStyles.text}>
-              {notifStatus === 'loading' ? 'جارٍ التفعيل…' :
-               notifStatus === 'success' ? '✓ تم تفعيل الإشعارات' :
-               notifStatus === 'error' ? `فشل: ${notifError}` :
-               'فعّل الإشعارات لتصلك التحديثات حتى عند إغلاق التطبيق'}
-            </Text>
-            <TouchableOpacity onPress={() => setShowNotifBanner(false)} style={notifBannerStyles.dismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <_Ionicons name="close" size={20} color="#c4b5fd" />
-            </TouchableOpacity>
-          </View>
-          {notifStatus !== 'success' && (
-            <TouchableOpacity
-              onPress={handleAllowNotifications}
-              style={[notifBannerStyles.allow, notifStatus === 'loading' && { opacity: 0.6 }]}
-              disabled={notifStatus === 'loading'}
-            >
-              <Text style={notifBannerStyles.allowText}>
-                {notifStatus === 'loading' ? '…' : notifStatus === 'error' ? '↺ حاول مجدداً' : '🔔 تفعيل الإشعارات'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-
-      {/* In-app push log panel — appears when user taps the activate button */}
-      {showPushLogs && Platform.OS === 'web' && pushLogs.length > 0 && (
-        <View style={{ position: 'absolute' as any, bottom: 200, left: 12, right: 12, zIndex: 10000, backgroundColor: '#0f172a', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#334155' }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '700' }}>📋 سجل Push</Text>
-            <TouchableOpacity onPress={() => setShowPushLogs(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <_Ionicons name="close" size={16} color="#94a3b8" />
-            </TouchableOpacity>
-          </View>
-          {pushLogs.map((log, i) => (
-            <Text key={i} style={{ color: log.startsWith('✗') ? '#f87171' : log.includes('✓') ? '#4ade80' : '#e2e8f0', fontSize: 12, lineHeight: 20, fontFamily: 'monospace' }}>
-              {log}
-            </Text>
-          ))}
-        </View>
-      )}
-
-      {/* Steps modal — opens only when user taps "كيف أفعّلها؟", has X to close */}
-      {showStepsModal && Platform.OS === 'web' && (
-        <View style={notifBannerStyles.overlay}>
-          <View style={notifBannerStyles.card}>
-            <TouchableOpacity onPress={() => setShowStepsModal(false)} style={{ alignSelf: 'flex-end', marginBottom: 8 }}>
-              <_Ionicons name="close" size={22} color="#94a3b8" />
-            </TouchableOpacity>
-            <Text style={notifBannerStyles.cardTitle}>🔔 فعّل الإشعارات</Text>
-            <Text style={notifBannerStyles.cardSubtitle}>اتبع هذه الخطوات في Chrome:</Text>
-
-            <View style={notifBannerStyles.step}>
-              <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>1</Text></View>
-              <Text style={notifBannerStyles.stepText}>اضغط على <Text style={notifBannerStyles.stepHighlight}>🔒</Text> بجانب عنوان الموقع</Text>
-            </View>
-            <View style={notifBannerStyles.step}>
-              <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>2</Text></View>
-              <Text style={notifBannerStyles.stepText}>اختر <Text style={notifBannerStyles.stepHighlight}>إعدادات الموقع</Text> (Site settings)</Text>
-            </View>
-            <View style={notifBannerStyles.step}>
-              <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>3</Text></View>
-              <Text style={notifBannerStyles.stepText}>اضغط على <Text style={notifBannerStyles.stepHighlight}>الإشعارات</Text> (Notifications)</Text>
-            </View>
-            <View style={notifBannerStyles.step}>
-              <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>4</Text></View>
-              <Text style={notifBannerStyles.stepText}>غيّر إلى <Text style={notifBannerStyles.stepHighlight}>السماح</Text> (Allow)</Text>
-            </View>
-
-            <TouchableOpacity
-              style={notifBannerStyles.refreshBtn}
-              onPress={() => { if (typeof window !== 'undefined') window.location.reload(); }}
-            >
-              <Text style={notifBannerStyles.refreshBtnText}>✓ انتهيت — تحديث الصفحة</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={({ route }) => ({
