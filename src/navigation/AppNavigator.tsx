@@ -122,6 +122,7 @@ function MainTabs() {
   const notifReady = useRef(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [showNotifGuide, setShowNotifGuide] = useState(false);
+  const [showStepsModal, setShowStepsModal] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -223,41 +224,51 @@ function MainTabs() {
         </View>
       )}
 
-      {/* Step-by-step guide — shown when Chrome has notifications blocked ('denied') */}
+      {/* Denied-state bottom card — non-blocking, same style as enable banner */}
       {showNotifGuide && Platform.OS === 'web' && (
+        <View style={notifBannerStyles.banner}>
+          <TouchableOpacity onPress={() => setShowNotifGuide(false)} style={notifBannerStyles.dismiss}>
+            <_Ionicons name="close" size={18} color="#c4b5fd" />
+          </TouchableOpacity>
+          <View style={notifBannerStyles.bannerRow}>
+            <View style={[notifBannerStyles.bannerIcon, { backgroundColor: '#be123c' }]}>
+              <_Ionicons name="notifications-off" size={22} color="#fff" />
+            </View>
+            <Text style={notifBannerStyles.text}>الإشعارات محظورة — فعّلها من إعدادات المتصفح</Text>
+          </View>
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity onPress={() => setShowStepsModal(true)} style={notifBannerStyles.allow}>
+              <Text style={notifBannerStyles.allowText}>🔧 كيف أفعّلها؟</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Steps modal — opens only when user taps "كيف أفعّلها؟", has X to close */}
+      {showStepsModal && Platform.OS === 'web' && (
         <View style={notifBannerStyles.overlay}>
           <View style={notifBannerStyles.card}>
+            <TouchableOpacity onPress={() => setShowStepsModal(false)} style={{ alignSelf: 'flex-end', marginBottom: 8 }}>
+              <_Ionicons name="close" size={22} color="#94a3b8" />
+            </TouchableOpacity>
             <Text style={notifBannerStyles.cardTitle}>🔔 فعّل الإشعارات</Text>
-            <Text style={notifBannerStyles.cardSubtitle}>
-              المتصفح حظر الإشعارات. اتبع الخطوات لإعادة تفعيلها:
-            </Text>
+            <Text style={notifBannerStyles.cardSubtitle}>اتبع هذه الخطوات في Chrome:</Text>
 
             <View style={notifBannerStyles.step}>
               <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>1</Text></View>
-              <Text style={notifBannerStyles.stepText}>
-                اضغط على أيقونة <Text style={notifBannerStyles.stepHighlight}>🔒</Text> بجانب عنوان الموقع في شريط العنوان
-              </Text>
+              <Text style={notifBannerStyles.stepText}>اضغط على <Text style={notifBannerStyles.stepHighlight}>🔒</Text> بجانب عنوان الموقع</Text>
             </View>
-
             <View style={notifBannerStyles.step}>
               <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>2</Text></View>
-              <Text style={notifBannerStyles.stepText}>
-                اختر <Text style={notifBannerStyles.stepHighlight}>إعدادات الموقع</Text> (Site settings)
-              </Text>
+              <Text style={notifBannerStyles.stepText}>اختر <Text style={notifBannerStyles.stepHighlight}>إعدادات الموقع</Text> (Site settings)</Text>
             </View>
-
             <View style={notifBannerStyles.step}>
               <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>3</Text></View>
-              <Text style={notifBannerStyles.stepText}>
-                اضغط على <Text style={notifBannerStyles.stepHighlight}>الإشعارات</Text> (Notifications)
-              </Text>
+              <Text style={notifBannerStyles.stepText}>اضغط على <Text style={notifBannerStyles.stepHighlight}>الإشعارات</Text> (Notifications)</Text>
             </View>
-
             <View style={notifBannerStyles.step}>
               <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>4</Text></View>
-              <Text style={notifBannerStyles.stepText}>
-                غيّر الإعداد إلى <Text style={notifBannerStyles.stepHighlight}>السماح</Text> (Allow)
-              </Text>
+              <Text style={notifBannerStyles.stepText}>غيّر إلى <Text style={notifBannerStyles.stepHighlight}>السماح</Text> (Allow)</Text>
             </View>
 
             <TouchableOpacity
@@ -265,10 +276,6 @@ function MainTabs() {
               onPress={() => { if (typeof window !== 'undefined') window.location.reload(); }}
             >
               <Text style={notifBannerStyles.refreshBtnText}>✓ انتهيت — تحديث الصفحة</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={notifBannerStyles.closeGuide} onPress={() => setShowNotifGuide(false)}>
-              <Text style={notifBannerStyles.closeGuideText}>تجاهل</Text>
             </TouchableOpacity>
           </View>
         </View>
