@@ -12,6 +12,7 @@ import {
   Pressable,
   Platform,
   Dimensions,
+  Image,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
@@ -97,6 +98,7 @@ export default function LibraryScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerTitle, setViewerTitle] = useState('');
+  const [viewerType, setViewerType] = useState<'pdf' | 'image' | 'other'>('other');
   const categoryFilter = selectedCategory === 'ALL' ? undefined : selectedCategory;
   const { data: publications, isLoading, refetch } = usePublications(categoryFilter);
   const { data: categories } = usePublicationCategories();
@@ -107,11 +109,12 @@ export default function LibraryScreen() {
     markPublicationViewed(item.id);
     const fixedUrl = fixFileUrl(item.contentUrl);
     const embeddedUrl = getViewerUrl(fixedUrl);
-    // On web, open in new tab; on native, show in-app viewer
-    if (Platform.OS === 'web') {
-      window.open(fixedUrl, '_blank');
+    setViewerTitle(item.title);
+    if (isImageUrl(fixedUrl)) {
+      setViewerType('image');
+      setViewerUrl(fixedUrl);
     } else if (embeddedUrl) {
-      setViewerTitle(item.title);
+      setViewerType(fixedUrl.match(/\.pdf(\?|$)/i) ? 'pdf' : 'other');
       setViewerUrl(embeddedUrl);
     } else {
       Linking.openURL(fixedUrl);
@@ -257,7 +260,16 @@ export default function LibraryScreen() {
               <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
             </TouchableOpacity>
           </View>
-          {viewerUrl && (
+          {viewerUrl && viewerType === 'image' && Platform.OS === 'web' && (
+            <View style={styles.webview}>
+              {/* @ts-ignore */}
+              <img src={viewerUrl} style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#000' }} alt={viewerTitle} />
+            </View>
+          )}
+          {viewerUrl && viewerType === 'image' && Platform.OS !== 'web' && (
+            <Image source={{ uri: viewerUrl }} style={styles.webview} resizeMode="contain" />
+          )}
+          {viewerUrl && viewerType !== 'image' && (
             <WebView
               source={{ uri: viewerUrl }}
               style={styles.webview}
