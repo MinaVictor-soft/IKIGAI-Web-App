@@ -112,12 +112,32 @@ function getViewerUrl(url: string): string | null {
   return fixed;
 }
 
+async function downloadFile(url: string, filename?: string) {
+  try {
+    if (Platform.OS === 'web') {
+      // Web: trigger browser download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || url.split('/').pop() || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      // Native: open URL which triggers OS download handler
+      await Linking.openURL(url);
+    }
+  } catch (err) {
+    console.error('Download failed:', err);
+  }
+}
+
 export default function LibraryScreen() {
   const { lang } = useLang();
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerTitle, setViewerTitle] = useState('');
   const [viewerType, setViewerType] = useState<ReturnType<typeof getFileType>>('other');
+  const [rawUrl, setRawUrl] = useState<string>('');
   const categoryFilter = selectedCategory === 'ALL' ? undefined : selectedCategory;
   const { data: publications, isLoading, refetch } = usePublications(categoryFilter);
   const { data: categories } = usePublicationCategories();
@@ -131,6 +151,7 @@ export default function LibraryScreen() {
     const embeddedUrl = getViewerUrl(fixedUrl);
     setViewerTitle(item.title);
     setViewerType(type);
+    setRawUrl(fixedUrl);
     if (embeddedUrl) {
       setViewerUrl(embeddedUrl);
     } else {
@@ -274,9 +295,14 @@ export default function LibraryScreen() {
                 <Ionicons name="arrow-back" size={22} color={COLORS.text} />
               </TouchableOpacity>
               <Text style={styles.viewerTitle} numberOfLines={1}>{viewerTitle}</Text>
-              <TouchableOpacity onPress={() => { if (viewerUrl) Linking.openURL(viewerUrl); }} style={styles.viewerExternalBtn}>
-                <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity onPress={() => { if (rawUrl) downloadFile(rawUrl, viewerTitle); }} style={styles.viewerDownloadBtn}>
+                  <Ionicons name="download-outline" size={20} color={COLORS.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { if (viewerUrl) Linking.openURL(viewerUrl); }} style={styles.viewerExternalBtn}>
+                  <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={styles.webview}>
               {/* @ts-ignore */}
@@ -316,9 +342,14 @@ export default function LibraryScreen() {
                 <Ionicons name="arrow-back" size={22} color={COLORS.text} />
               </TouchableOpacity>
               <Text style={styles.viewerTitle} numberOfLines={1}>{viewerTitle}</Text>
-              <TouchableOpacity onPress={() => { if (viewerUrl) Linking.openURL(viewerUrl); }} style={styles.viewerExternalBtn}>
-                <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity onPress={() => { if (rawUrl) downloadFile(rawUrl, viewerTitle); }} style={styles.viewerDownloadBtn}>
+                  <Ionicons name="download-outline" size={20} color={COLORS.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { if (viewerUrl) Linking.openURL(viewerUrl); }} style={styles.viewerExternalBtn}>
+                  <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
             {viewerType === 'image' ? (
               <Image source={{ uri: viewerUrl }} style={styles.webview} resizeMode="contain" />
@@ -384,6 +415,7 @@ const styles = StyleSheet.create({
   viewerHeader: { flexDirection: 'row', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 54 : 30, paddingBottom: 12, paddingHorizontal: 16, backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   viewerCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
   viewerTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: COLORS.text, marginHorizontal: 12 },
+  viewerDownloadBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
   viewerExternalBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
   webview: { flex: 1 },
   webviewLoading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
