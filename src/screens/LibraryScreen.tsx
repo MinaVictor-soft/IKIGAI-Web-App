@@ -115,19 +115,26 @@ function getViewerUrl(url: string): string | null {
 async function downloadFile(url: string, filename?: string) {
   try {
     if (Platform.OS === 'web') {
-      // Web: trigger browser download
+      // Fetch file as blob so download attribute works cross-origin
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.download = filename || url.split('/').pop() || 'download';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
     } else {
       // Native: open URL which triggers OS download handler
       await Linking.openURL(url);
     }
   } catch (err) {
     console.error('Download failed:', err);
+    // Fallback: open in browser/external app
+    Linking.openURL(url);
   }
 }
 
