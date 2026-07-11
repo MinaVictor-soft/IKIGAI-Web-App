@@ -82,6 +82,20 @@ const notifBannerStyles = StyleSheet.create({
   allow: { backgroundColor: '#7c3aed', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 5, marginLeft: 6 },
   allowText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   dismiss: { padding: 4, marginLeft: 4 },
+  // Denied-state guide modal
+  overlay: { position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  card: { backgroundColor: '#1e293b', borderRadius: 16, padding: 24, width: '100%', maxWidth: 380, borderWidth: 1, borderColor: '#334155' },
+  cardTitle: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 6 },
+  cardSubtitle: { color: '#94a3b8', fontSize: 13, textAlign: 'center', marginBottom: 20 },
+  step: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14, gap: 12 },
+  stepNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#7c3aed', justifyContent: 'center', alignItems: 'center' },
+  stepNumText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  stepText: { flex: 1, color: '#e2e8f0', fontSize: 13, lineHeight: 20, textAlign: 'right' },
+  stepHighlight: { color: '#a78bfa', fontWeight: '700' },
+  refreshBtn: { backgroundColor: '#7c3aed', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
+  refreshBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  closeGuide: { marginTop: 12, alignItems: 'center' },
+  closeGuideText: { color: '#64748b', fontSize: 13 },
 });
 
 function MainTabs() {
@@ -105,15 +119,17 @@ function MainTabs() {
   const knownQuizIds = useRef<Set<string>>(new Set());
   const notifReady = useRef(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
+  const [showNotifGuide, setShowNotifGuide] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const state = getNotificationPermissionState();
-    // If permission is still 'default' (never decided), ALWAYS show the banner —
-    // dismissed flag is ignored because the user still hasn't subscribed.
-    // Only suppress if they already granted or denied at the browser level.
     if (state === 'default') {
+      // Never decided — show the enable banner
       setShowNotifBanner(true);
+    } else if (state === 'denied') {
+      // Blocked in browser — show step-by-step guide to unblock
+      setShowNotifGuide(true);
     }
   }, []);
 
@@ -185,7 +201,7 @@ function MainTabs() {
 
   return (
     <>
-      {/* Notification permission banner for mobile browsers */}
+      {/* Notification permission banner — shown when permission is 'default' */}
       {showNotifBanner && Platform.OS === 'web' && (
         <View style={notifBannerStyles.banner}>
           <_Ionicons name="notifications-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
@@ -193,9 +209,60 @@ function MainTabs() {
           <TouchableOpacity onPress={handleAllowNotifications} style={notifBannerStyles.allow}>
             <Text style={notifBannerStyles.allowText}>تفعيل</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setShowNotifBanner(false); localStorage.setItem('notif_banner_dismissed', '1'); }} style={notifBannerStyles.dismiss}>
+          <TouchableOpacity onPress={() => setShowNotifBanner(false)} style={notifBannerStyles.dismiss}>
             <_Ionicons name="close" size={18} color="#aaa" />
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Step-by-step guide — shown when Chrome has notifications blocked ('denied') */}
+      {showNotifGuide && Platform.OS === 'web' && (
+        <View style={notifBannerStyles.overlay}>
+          <View style={notifBannerStyles.card}>
+            <Text style={notifBannerStyles.cardTitle}>🔔 فعّل الإشعارات</Text>
+            <Text style={notifBannerStyles.cardSubtitle}>
+              المتصفح حظر الإشعارات. اتبع الخطوات لإعادة تفعيلها:
+            </Text>
+
+            <View style={notifBannerStyles.step}>
+              <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>1</Text></View>
+              <Text style={notifBannerStyles.stepText}>
+                اضغط على أيقونة <Text style={notifBannerStyles.stepHighlight}>🔒</Text> بجانب عنوان الموقع في شريط العنوان
+              </Text>
+            </View>
+
+            <View style={notifBannerStyles.step}>
+              <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>2</Text></View>
+              <Text style={notifBannerStyles.stepText}>
+                اختر <Text style={notifBannerStyles.stepHighlight}>إعدادات الموقع</Text> (Site settings)
+              </Text>
+            </View>
+
+            <View style={notifBannerStyles.step}>
+              <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>3</Text></View>
+              <Text style={notifBannerStyles.stepText}>
+                اضغط على <Text style={notifBannerStyles.stepHighlight}>الإشعارات</Text> (Notifications)
+              </Text>
+            </View>
+
+            <View style={notifBannerStyles.step}>
+              <View style={notifBannerStyles.stepNum}><Text style={notifBannerStyles.stepNumText}>4</Text></View>
+              <Text style={notifBannerStyles.stepText}>
+                غيّر الإعداد إلى <Text style={notifBannerStyles.stepHighlight}>السماح</Text> (Allow)
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={notifBannerStyles.refreshBtn}
+              onPress={() => { if (typeof window !== 'undefined') window.location.reload(); }}
+            >
+              <Text style={notifBannerStyles.refreshBtnText}>✓ انتهيت — تحديث الصفحة</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={notifBannerStyles.closeGuide} onPress={() => setShowNotifGuide(false)}>
+              <Text style={notifBannerStyles.closeGuideText}>تجاهل</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     <Tab.Navigator
