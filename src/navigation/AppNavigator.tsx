@@ -200,17 +200,30 @@ function MainTabs() {
   const handleAllowNotifications = async () => {
     // On *.replit.dev Chrome silently blocks all notification permission calls —
     // detect this early and redirect the user to the production domain instead.
-    if (typeof window !== 'undefined' && window.location.hostname.endsWith('.replit.dev')) {
+    // Detect incognito by storage quota (Chrome incognito caps at ~120 MB)
+    let incognito = false;
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        const { quota } = await navigator.storage.estimate();
+        if (quota !== undefined && quota < 130 * 1024 * 1024) incognito = true;
+      }
+    } catch {}
+
+    if (incognito) {
       setNotifStatus('error');
-      setNotifError('replit.dev محظور من Chrome — اختبر على ikigai-web-app.replit.app');
-      setShowPushLogs(true);
-      setPushLogs(['⚠️ هذا الرابط محظور من Chrome',
-        '→ افتح: https://ikigai-web-app.replit.app']);
+      setNotifError('وضع التصفح الخفي يمنع الإشعارات — افتح نافذة Chrome عادية');
       return;
     }
+
+    // On *.replit.dev Chrome silently blocks all notification permission calls
+    if (typeof window !== 'undefined' && window.location.hostname.endsWith('.replit.dev')) {
+      setNotifStatus('error');
+      setNotifError('افتح التطبيق على ikigai-web-app.replit.app لتفعيل الإشعارات');
+      return;
+    }
+
     // Call requestPermission() FIRST — before any setState — so the browser
-    // still considers this a direct user gesture (some browsers refuse to show
-    // the permission popup if async work happens before the call).
+    // still considers this a direct user gesture
     const granted = await notificationService.requestPermission();
     const permAfter = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
 
@@ -222,11 +235,8 @@ function MainTabs() {
       addLog(`② النتيجة: ${granted ? '✓ ممنوح' : '✗ مرفوض'} — الحالة: ${permAfter}`);
 
       if (!granted) {
-        // Silently dismiss — browser blocked or incognito mode
-        addLog(permAfter === 'denied'
-          ? '③ محظور (incognito أو إعدادات المتصفح) — تم الإغلاق'
-          : '③ أُغلقت نافذة الإذن');
-        setShowNotifBanner(false);
+        setNotifStatus('error');
+        setNotifError('لم يتم منح الإذن — تحقق من إعدادات المتصفح');
         return;
       }
 
