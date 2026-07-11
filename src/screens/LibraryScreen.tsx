@@ -66,27 +66,46 @@ function fixFileUrl(url: string): string {
   return url;
 }
 
-function isImageUrl(url: string): boolean {
-  return !!url.match(/\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i);
+function getFileType(url: string): 'image' | 'video' | 'audio' | 'pdf' | 'doc' | 'sheet' | 'slide' | 'text' | 'other' {
+  const lower = url.toLowerCase();
+  if (lower.match(/\.(png|jpg|jpeg|gif|webp|svg|bmp|ico)(\?|$)/)) return 'image';
+  if (lower.match(/\.(mp4|mov|webm|mkv|avi)(\?|$)/)) return 'video';
+  if (lower.match(/\.(mp3|wav|ogg|m4a|flac|aac)(\?|$)/)) return 'audio';
+  if (lower.match(/\.(pdf)(\?|$)/)) return 'pdf';
+  if (lower.match(/\.(doc|docx|odt|rtf)(\?|$)/)) return 'doc';
+  if (lower.match(/\.(xls|xlsx|csv|ods)(\?|$)/)) return 'sheet';
+  if (lower.match(/\.(ppt|pptx|odp)(\?|$)/)) return 'slide';
+  if (lower.match(/\.(txt|md|json|xml|html|css|js|ts|py)(\?|$)/)) return 'text';
+  if (lower.includes('drive.google.com/file/d/')) return 'other';
+  if (lower.includes('docs.google.com/document')) return 'doc';
+  if (lower.includes('docs.google.com/spreadsheets')) return 'sheet';
+  if (lower.includes('docs.google.com/presentation')) return 'slide';
+  return 'other';
 }
 
 function getViewerUrl(url: string): string | null {
   const fixed = fixFileUrl(url);
+  const type = getFileType(fixed);
+
   // Google Drive file links
   if (fixed.includes('drive.google.com/file/d/')) {
     const fileId = fixed.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
     if (fileId) return `https://drive.google.com/file/d/${fileId}/preview`;
   }
-  // Google Docs/Sheets/Slides
+  // Google Docs/Sheets/Slides native preview
   if (fixed.includes('docs.google.com')) {
     return fixed.replace(/\/edit.*$/, '/preview');
   }
-  // Direct PDF links - use Google Docs Viewer for embedding
-  if (fixed.match(/\.pdf(\?|$)/i)) {
+  // Direct file types - use Google Docs Viewer for embedding docs/sheets/slides
+  if (type === 'doc' || type === 'sheet' || type === 'slide') {
     return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(fixed)}`;
   }
-  // Images - return as-is for direct display
-  if (isImageUrl(fixed)) {
+  // PDF - Google Docs Viewer
+  if (type === 'pdf') {
+    return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(fixed)}`;
+  }
+  // Images, video, audio, text - return as-is for direct display
+  if (type === 'image' || type === 'video' || type === 'audio' || type === 'text') {
     return fixed;
   }
   // Any other URL - try opening in webview directly
@@ -98,7 +117,7 @@ export default function LibraryScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerTitle, setViewerTitle] = useState('');
-  const [viewerType, setViewerType] = useState<'pdf' | 'image' | 'other'>('other');
+  const [viewerType, setViewerType] = useState<ReturnType<typeof getFileType>>('other');
   const categoryFilter = selectedCategory === 'ALL' ? undefined : selectedCategory;
   const { data: publications, isLoading, refetch } = usePublications(categoryFilter);
   const { data: categories } = usePublicationCategories();
@@ -108,13 +127,11 @@ export default function LibraryScreen() {
   const openPublication = useCallback((item: Publication) => {
     markPublicationViewed(item.id);
     const fixedUrl = fixFileUrl(item.contentUrl);
+    const type = getFileType(fixedUrl);
     const embeddedUrl = getViewerUrl(fixedUrl);
     setViewerTitle(item.title);
-    if (isImageUrl(fixedUrl)) {
-      setViewerType('image');
-      setViewerUrl(fixedUrl);
-    } else if (embeddedUrl) {
-      setViewerType(fixedUrl.match(/\.pdf(\?|$)/i) ? 'pdf' : 'other');
+    setViewerType(type);
+    if (embeddedUrl) {
       setViewerUrl(embeddedUrl);
     } else {
       Linking.openURL(fixedUrl);
@@ -248,7 +265,7 @@ export default function LibraryScreen() {
         />
       )}
 
-      {/* In-app Viewer Overlay */}
+      {/* In-app Viewer Overlay — Web */}
       {!!viewerUrl && Platform.OS === 'web' && (
         <Pressable style={styles.webOverlay} onPress={() => setViewerUrl(null)}>
           <View style={styles.webOverlayInner} onStartShouldSetResponder={() => true}>
@@ -261,17 +278,31 @@ export default function LibraryScreen() {
                 <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
               </TouchableOpacity>
             </View>
-            {viewerType === 'image' ? (
-              <View style={styles.webview}>
-                {/* @ts-ignore */}
-                <img src={viewerUrl} style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#000' }} alt={viewerTitle} />
-              </View>
-            ) : (
-              <View style={styles.webview}>
-                {/* @ts-ignore */}
+            <View style={styles.webview}>
+              {/* @ts-ignore */}
+              {viewerType === 'image' && <img src={viewerUrl} style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#000' }} alt={viewerTitle} />}
+              {/* @ts-ignore */}
+              {viewerType === 'video' && <video src={viewerUrl} controls autoPlay style={{ width: '100%', height: '100%', backgroundColor: '#000' }} />}
+              {/* @ts-ignore */}
+              {viewerType === 'audio' && (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+                  <Ionicons name="musical-note" size={64} color={COLORS.primary} />
+                  <Text style={{ color: COLORS.text, marginTop: 16, fontSize: 16 }}>{viewerTitle}</Text>
+                  <audio controls autoPlay src={viewerUrl} style={{ width: '100%', marginTop: 24 }} />
+                </View>
+              )}
+              {/* @ts-ignore */}
+              {viewerType === 'text' && (
+                <View style={{ flex: 1, backgroundColor: '#1a1a2e', padding: 16 }}>
+                  <pre style={{ color: '#e2e8f0', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'auto', height: '100%' }}>
+                    <code>{viewerUrl}</code>
+                  </pre>
+                </View>
+              )}
+              {(viewerType === 'pdf' || viewerType === 'doc' || viewerType === 'sheet' || viewerType === 'slide' || viewerType === 'other') && (
                 <iframe src={viewerUrl} style={{ width: '100%', height: '100%', border: 'none' }} title={viewerTitle} />
-              </View>
-            )}
+              )}
+            </View>
           </View>
         </Pressable>
       )}
@@ -291,6 +322,10 @@ export default function LibraryScreen() {
             </View>
             {viewerType === 'image' ? (
               <Image source={{ uri: viewerUrl }} style={styles.webview} resizeMode="contain" />
+            ) : viewerType === 'video' ? (
+              <WebView source={{ html: `<video src="${viewerUrl}" controls autoplay style="width:100%;height:100%;background:#000"></video>` }} style={styles.webview} />
+            ) : viewerType === 'audio' ? (
+              <WebView source={{ html: `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#fff;font-family:sans-serif"><div style="font-size:48px;margin-bottom:20px">&#127911;</div><div style="font-size:18px;margin-bottom:30px">${viewerTitle}</div><audio controls autoplay src="${viewerUrl}" style="width:80%"></audio></div>` }} style={styles.webview} />
             ) : (
               <WebView
                 source={{ uri: viewerUrl }}
