@@ -48,22 +48,48 @@ function getCategoryIcon(pub: Publication): keyof typeof Ionicons.glyphMap {
   return CATEGORY_ICONS[pub.category?.name] || 'folder-open';
 }
 
+const BACKEND_BASE = 'https://ikigai-backend.replit.app';
+const FRONTEND_BASE = 'ikigai-web-app.replit.app';
+
+// Safety net: rewrite URLs that accidentally point to the frontend domain
+function fixFileUrl(url: string): string {
+  if (!url) return url;
+  // Replace frontend domain with backend domain
+  if (url.includes(FRONTEND_BASE)) {
+    return url.replace(/https?:\/\/[^/]+/, BACKEND_BASE);
+  }
+  // If relative path, prepend backend base
+  if (url.startsWith('/api/')) {
+    return `${BACKEND_BASE}${url}`;
+  }
+  return url;
+}
+
+function isImageUrl(url: string): boolean {
+  return !!url.match(/\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/i);
+}
+
 function getViewerUrl(url: string): string | null {
+  const fixed = fixFileUrl(url);
   // Google Drive file links
-  if (url.includes('drive.google.com/file/d/')) {
-    const fileId = url.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
+  if (fixed.includes('drive.google.com/file/d/')) {
+    const fileId = fixed.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
     if (fileId) return `https://drive.google.com/file/d/${fileId}/preview`;
   }
   // Google Docs/Sheets/Slides
-  if (url.includes('docs.google.com')) {
-    return url.replace(/\/edit.*$/, '/preview');
+  if (fixed.includes('docs.google.com')) {
+    return fixed.replace(/\/edit.*$/, '/preview');
   }
-  // Direct PDF links - use Google Docs Viewer
-  if (url.match(/\.pdf(\?|$)/i)) {
-    return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+  // Direct PDF links - use Google Docs Viewer for embedding
+  if (fixed.match(/\.pdf(\?|$)/i)) {
+    return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(fixed)}`;
+  }
+  // Images - return as-is for direct display
+  if (isImageUrl(fixed)) {
+    return fixed;
   }
   // Any other URL - try opening in webview directly
-  return url;
+  return fixed;
 }
 
 export default function LibraryScreen() {
@@ -79,12 +105,16 @@ export default function LibraryScreen() {
 
   const openPublication = useCallback((item: Publication) => {
     markPublicationViewed(item.id);
-    const embeddedUrl = getViewerUrl(item.contentUrl);
-    if (embeddedUrl && Platform.OS !== 'web') {
+    const fixedUrl = fixFileUrl(item.contentUrl);
+    const embeddedUrl = getViewerUrl(fixedUrl);
+    // On web, open in new tab; on native, show in-app viewer
+    if (Platform.OS === 'web') {
+      window.open(fixedUrl, '_blank');
+    } else if (embeddedUrl) {
       setViewerTitle(item.title);
       setViewerUrl(embeddedUrl);
     } else {
-      Linking.openURL(item.contentUrl);
+      Linking.openURL(fixedUrl);
     }
   }, [markPublicationViewed]);
 
