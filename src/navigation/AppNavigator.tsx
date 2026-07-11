@@ -201,13 +201,17 @@ function MainTabs() {
   const [notifError, setNotifError] = useState('');
 
   const handleAllowNotifications = async () => {
+    // Call requestPermission() FIRST — before any setState — so the browser
+    // still considers this a direct user gesture (some browsers refuse to show
+    // the permission popup if async work happens before the call).
+    const granted = await notificationService.requestPermission();
+    const permAfter = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
+
     setShowPushLogs(true);
     setPushLogs([]);
     setNotifStatus('loading');
     try {
       addLog('① طلب إذن الإشعارات…');
-      const granted = await notificationService.requestPermission();
-      const permAfter = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
       addLog(`② النتيجة: ${granted ? '✓ ممنوح' : '✗ مرفوض'} — الحالة: ${permAfter}`);
 
       if (!granted) {
