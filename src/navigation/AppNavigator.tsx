@@ -208,7 +208,6 @@ function MainTabs() {
       <Tab.Screen name="Scan" component={ScannerScreen} options={{ tabBarLabel: t('scanQr') }} />
       <Tab.Screen name="Info" component={InfoScreen} options={{ tabBarLabel: 'Info' }} />
     </Tab.Navigator>
-    </>
   );
 }
 
