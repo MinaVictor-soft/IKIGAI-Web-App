@@ -77,11 +77,13 @@ const badgeStyles = StyleSheet.create({
 });
 
 const notifBannerStyles = StyleSheet.create({
-  banner: { position: 'absolute' as any, top: 0, left: 0, right: 0, zIndex: 9999, flexDirection: 'row', alignItems: 'center', backgroundColor: '#1e293b', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#334155' },
-  text: { flex: 1, color: '#e2e8f0', fontSize: 12, textAlign: 'right', marginHorizontal: 8 },
-  allow: { backgroundColor: '#7c3aed', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 5, marginLeft: 6 },
-  allowText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  dismiss: { padding: 4, marginLeft: 4 },
+  banner: { position: 'absolute' as any, bottom: 80, left: 12, right: 12, zIndex: 9999, backgroundColor: '#4c1d95', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 12, borderWidth: 1, borderColor: '#7c3aed' },
+  bannerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  bannerIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#7c3aed', justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
+  text: { flex: 1, color: '#ede9fe', fontSize: 14, textAlign: 'right', lineHeight: 20, fontWeight: '600' },
+  allow: { backgroundColor: '#fff', borderRadius: 10, paddingVertical: 12, alignItems: 'center', flex: 1, marginRight: 8 },
+  allowText: { color: '#4c1d95', fontSize: 14, fontWeight: '800' },
+  dismiss: { padding: 8, position: 'absolute' as any, top: 8, left: 8 },
   // Denied-state guide modal
   overlay: { position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   card: { backgroundColor: '#1e293b', borderRadius: 16, padding: 24, width: '100%', maxWidth: 380, borderWidth: 1, borderColor: '#334155' },
@@ -204,14 +206,20 @@ function MainTabs() {
       {/* Notification permission banner — shown when permission is 'default' */}
       {showNotifBanner && Platform.OS === 'web' && (
         <View style={notifBannerStyles.banner}>
-          <_Ionicons name="notifications-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={notifBannerStyles.text}>فعّل الإشعارات لتصلك التحديثات حتى عند إغلاق التطبيق</Text>
-          <TouchableOpacity onPress={handleAllowNotifications} style={notifBannerStyles.allow}>
-            <Text style={notifBannerStyles.allowText}>تفعيل</Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowNotifBanner(false)} style={notifBannerStyles.dismiss}>
-            <_Ionicons name="close" size={18} color="#aaa" />
+            <_Ionicons name="close" size={18} color="#c4b5fd" />
           </TouchableOpacity>
+          <View style={notifBannerStyles.bannerRow}>
+            <View style={notifBannerStyles.bannerIcon}>
+              <_Ionicons name="notifications" size={22} color="#fff" />
+            </View>
+            <Text style={notifBannerStyles.text}>فعّل الإشعارات لتصلك التحديثات حتى عند إغلاق التطبيق</Text>
+          </View>
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity onPress={handleAllowNotifications} style={notifBannerStyles.allow}>
+              <Text style={notifBannerStyles.allowText}>🔔 تفعيل الإشعارات</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
