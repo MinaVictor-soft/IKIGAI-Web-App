@@ -186,6 +186,34 @@ export default function HomeScreen() {
             : 'IKIGAI Quest is a journey of self-discovery through interactive activities, quizzes, sports, and worship. Earn XP and level up!'}
         </Text>
       </Animated.View>
+
+      {/* Slogan Poem */}
+      <Animated.View style={{ opacity: fadeAnim, marginHorizontal: SPACING.md, marginTop: SPACING.lg, marginBottom: SPACING.md }}>
+        <LinearGradient
+          colors={['#1e1b4b', '#312e81', '#4c1d95']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.poemCard}
+        >
+          <Text style={styles.poemStars}>✦  ✦  ✦</Text>
+          <Text style={styles.poemVerse}>لما الناس بتشوف أعمالنا</Text>
+          <Text style={styles.poemVerse}>بيمجمدوا اسم اللى عملنا</Text>
+          <View style={styles.poemDivider} />
+          <Text style={styles.poemVerse}>و هو ده هدفنا و املنا</Text>
+          <Text style={styles.poemVerse}>يقولوا ان إلهنا عظيم</Text>
+          <View style={styles.poemDivider} />
+          <Text style={styles.poemVerse}>فى وعوده صادق وكريم</Text>
+          <Text style={styles.poemVerse}>هانمجده زى السيرافيم</Text>
+          <View style={styles.poemDivider} />
+          <Text style={styles.poemVerse}>وعشان مجد إلهنا يبان</Text>
+          <Text style={styles.poemVerse}>اختارنا شعار كله إيمان</Text>
+          <View style={styles.poemSloganBox}>
+            <Text style={styles.poemSloganQ}>ايكيجاى هدفك ايه؟</Text>
+            <Text style={styles.poemSloganA}>أمجد إسمه فى كل مكان</Text>
+          </View>
+          <Text style={styles.poemStars}>✦  ✦  ✦</Text>
+        </LinearGradient>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -277,4 +305,59 @@ const styles = StyleSheet.create({
   aboutIcon: { fontSize: 20 },
   aboutTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, textAlign: 'center' },
   aboutText: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
+  poemCard: {
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#6d28d9',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  poemStars: {
+    fontSize: 18,
+    color: '#fbbf24',
+    letterSpacing: 6,
+    marginVertical: 8,
+  },
+  poemVerse: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#e0d9ff',
+    textAlign: 'center',
+    lineHeight: 30,
+    writingDirection: 'rtl',
+  },
+  poemDivider: {
+    width: 40,
+    height: 1,
+    backgroundColor: 'rgba(196,181,253,0.3)',
+    marginVertical: 10,
+    borderRadius: 1,
+  },
+  poemSloganBox: {
+    marginTop: 16,
+    borderWidth: 1.5,
+    borderColor: '#fbbf24',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    backgroundColor: 'rgba(251,191,36,0.08)',
+  },
+  poemSloganQ: {
+    fontSize: 14,
+    color: '#fde68a',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  poemSloganA: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fbbf24',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
 });
