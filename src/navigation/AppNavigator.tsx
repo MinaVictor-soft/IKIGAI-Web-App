@@ -195,14 +195,31 @@ function MainTabs() {
 
   const handleAllowNotifications = async () => {
     setNotifStatus('loading');
-    const granted = await notificationService.requestPermission();
-    if (!granted) {
-      setNotifStatus('idle');
-      return;
-    }
     try {
+      const granted = await notificationService.requestPermission();
+      const permAfter = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
+      console.log('[Push] requestPermission result:', granted, '| Notification.permission now:', permAfter);
+
+      if (!granted) {
+        if (permAfter === 'denied') {
+          // User explicitly clicked Block — switch to denied guide card
+          setShowNotifBanner(false);
+          setShowNotifGuide(true);
+        } else {
+          // Dismissed popup, or browser (iframe) blocked the API silently
+          setNotifStatus('error');
+          setNotifError(
+            permAfter === 'default'
+              ? 'أغلقت نافذة الإذن — افتح الرابط في تبويب جديد وحاول مجدداً'
+              : 'الإشعارات غير مدعومة في هذا المتصفح'
+          );
+        }
+        return;
+      }
+
       const token = await getAccessToken();
       if (!token) throw new Error('Not logged in — no access token');
+      console.log('[Push] token present, calling subscribeWebPush…');
       await subscribeWebPush(token);
       setShowNotifBanner(false);
       setNotifStatus('success');
