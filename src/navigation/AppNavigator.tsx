@@ -201,6 +201,16 @@ function MainTabs() {
   const [notifError, setNotifError] = useState('');
 
   const handleAllowNotifications = async () => {
+    // On *.replit.dev Chrome silently blocks all notification permission calls —
+    // detect this early and redirect the user to the production domain instead.
+    if (typeof window !== 'undefined' && window.location.hostname.endsWith('.replit.dev')) {
+      setNotifStatus('error');
+      setNotifError('replit.dev محظور من Chrome — اختبر على ikigai-web-app.replit.app');
+      setShowPushLogs(true);
+      setPushLogs(['⚠️ هذا الرابط محظور من Chrome',
+        '→ افتح: https://ikigai-web-app.replit.app']);
+      return;
+    }
     // Call requestPermission() FIRST — before any setState — so the browser
     // still considers this a direct user gesture (some browsers refuse to show
     // the permission popup if async work happens before the call).
