@@ -316,6 +316,21 @@ const registerServiceWorker = async (token: string) => {
   }
 };
 
+// Call this after the user grants notification permission to register the Web Push subscription.
+// Safe to call multiple times — reuses existing subscription if already subscribed.
+export const subscribeWebPush = async (token: string): Promise<void> => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const registration = serviceWorkerRegistration
+      ?? await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+    if (!serviceWorkerRegistration) serviceWorkerRegistration = registration;
+    await registerWebPush(registration, token);
+  } catch (error) {
+    console.error('subscribeWebPush failed:', error);
+  }
+};
+
 export const startEventListener = async (token: string, onNewEvent?: (event: any) => void) => {
   if (eventListenerInterval) return;
 

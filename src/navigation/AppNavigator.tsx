@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons as _Ionicons } from '@expo/vector-icons';
-import { notificationService, getNotificationPermissionState } from '../lib/notifications';
+import { notificationService, getNotificationPermissionState, subscribeWebPush } from '../lib/notifications';
+import { getAccessToken } from '../lib/storage';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -171,8 +172,13 @@ function MainTabs() {
   const handleAllowNotifications = async () => {
     setShowNotifBanner(false);
     const granted = await notificationService.requestPermission();
-    if (!granted) {
-      // Permission denied — nothing more we can do
+    if (!granted) return;
+    // Permission just granted — register Web Push subscription immediately
+    try {
+      const token = await getAccessToken();
+      if (token) await subscribeWebPush(token);
+    } catch (e) {
+      console.error('Failed to subscribe to Web Push:', e);
     }
   };
 
