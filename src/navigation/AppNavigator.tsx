@@ -137,11 +137,8 @@ function MainTabs() {
     const state = getNotificationPermissionState();
     if (state === 'default') {
       setShowNotifBanner(true);
-    } else if (state === 'denied') {
-      // Only show denied card if user hasn't dismissed it this session
-      const dismissed = typeof localStorage !== 'undefined' && localStorage.getItem('notifGuideDismissed');
-      if (!dismissed) setShowNotifGuide(true);
     }
+    // denied state: show nothing — browser already blocked, no need to nag
   }, []);
 
   useEffect(() => {
@@ -225,19 +222,11 @@ function MainTabs() {
       addLog(`② النتيجة: ${granted ? '✓ ممنوح' : '✗ مرفوض'} — الحالة: ${permAfter}`);
 
       if (!granted) {
-        if (permAfter === 'denied') {
-          addLog('③ تم الحظر — تحويل إلى كارت الإرشادات');
-          setShowNotifBanner(false);
-          setShowNotifGuide(true);
-        } else {
-          addLog('③ أُغلقت نافذة الإذن أو محظورة داخل iframe');
-          setNotifStatus('error');
-          setNotifError(
-            permAfter === 'default'
-              ? 'أغلقت نافذة الإذن — افتح الرابط في تبويب جديد'
-              : 'الإشعارات غير مدعومة في هذا المتصفح'
-          );
-        }
+        // Silently dismiss — browser blocked or incognito mode
+        addLog(permAfter === 'denied'
+          ? '③ محظور (incognito أو إعدادات المتصفح) — تم الإغلاق'
+          : '③ أُغلقت نافذة الإذن');
+        setShowNotifBanner(false);
         return;
       }
 
@@ -291,30 +280,6 @@ function MainTabs() {
         </View>
       )}
 
-      {/* Denied-state bottom card — non-blocking, same style as enable banner */}
-      {showNotifGuide && Platform.OS === 'web' && (
-        <View style={notifBannerStyles.banner}>
-          <View style={notifBannerStyles.bannerHeader}>
-            <View style={[notifBannerStyles.bannerIcon, { backgroundColor: '#be123c' }]}>
-              <_Ionicons name="notifications-off" size={22} color="#fff" />
-            </View>
-            <Text style={notifBannerStyles.text}>الإشعارات محظورة — فعّلها من إعدادات المتصفح</Text>
-            <TouchableOpacity
-              onPress={() => {
-                if (typeof localStorage !== 'undefined') localStorage.setItem('notifGuideDismissed', '1');
-                setShowNotifGuide(false);
-              }}
-              style={notifBannerStyles.dismiss}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <_Ionicons name="close" size={20} color="#c4b5fd" />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity onPress={() => setShowStepsModal(true)} style={notifBannerStyles.allow}>
-            <Text style={notifBannerStyles.allowText}>🔧 كيف أفعّلها؟</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* In-app push log panel — appears when user taps the activate button */}
       {showPushLogs && Platform.OS === 'web' && pushLogs.length > 0 && (
