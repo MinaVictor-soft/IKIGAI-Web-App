@@ -124,16 +124,23 @@ function MainTabs() {
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [showNotifGuide, setShowNotifGuide] = useState(false);
   const [showStepsModal, setShowStepsModal] = useState(false);
+  // In-app push log panel
+  const [pushLogs, setPushLogs] = useState<string[]>([]);
+  const [showPushLogs, setShowPushLogs] = useState(false);
+  const addLog = (msg: string) => {
+    console.log(msg);
+    setPushLogs(prev => [...prev.slice(-19), msg]);
+  };
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const state = getNotificationPermissionState();
     if (state === 'default') {
-      // Never decided — show the enable banner
       setShowNotifBanner(true);
     } else if (state === 'denied') {
-      // Blocked in browser — show step-by-step guide to unblock
-      setShowNotifGuide(true);
+      // Only show denied card if user hasn't dismissed it this session
+      const dismissed = typeof localStorage !== 'undefined' && localStorage.getItem('notifGuideDismissed');
+      if (!dismissed) setShowNotifGuide(true);
     }
   }, []);
 
@@ -194,39 +201,45 @@ function MainTabs() {
   const [notifError, setNotifError] = useState('');
 
   const handleAllowNotifications = async () => {
+    setShowPushLogs(true);
+    setPushLogs([]);
     setNotifStatus('loading');
     try {
+      addLog('① طلب إذن الإشعارات…');
       const granted = await notificationService.requestPermission();
       const permAfter = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
-      console.log('[Push] requestPermission result:', granted, '| Notification.permission now:', permAfter);
+      addLog(`② النتيجة: ${granted ? '✓ ممنوح' : '✗ مرفوض'} — الحالة: ${permAfter}`);
 
       if (!granted) {
         if (permAfter === 'denied') {
-          // User explicitly clicked Block — switch to denied guide card
+          addLog('③ تم الحظر — تحويل إلى كارت الإرشادات');
           setShowNotifBanner(false);
           setShowNotifGuide(true);
         } else {
-          // Dismissed popup, or browser (iframe) blocked the API silently
+          addLog('③ أُغلقت نافذة الإذن أو محظورة داخل iframe');
           setNotifStatus('error');
           setNotifError(
             permAfter === 'default'
-              ? 'أغلقت نافذة الإذن — افتح الرابط في تبويب جديد وحاول مجدداً'
+              ? 'أغلقت نافذة الإذن — افتح الرابط في تبويب جديد'
               : 'الإشعارات غير مدعومة في هذا المتصفح'
           );
         }
         return;
       }
 
+      addLog('③ جارٍ تسجيل Service Worker…');
       const token = await getAccessToken();
-      if (!token) throw new Error('Not logged in — no access token');
-      console.log('[Push] token present, calling subscribeWebPush…');
+      if (!token) throw new Error('لا يوجد access token — سجّل الدخول أولاً');
+      addLog('④ token موجود — جارٍ الاشتراك في Push…');
       await subscribeWebPush(token);
+      addLog('⑤ ✓ تم الاشتراك وإرسال البيانات للخادم');
       setShowNotifBanner(false);
       setNotifStatus('success');
     } catch (e: any) {
-      console.error('[Push ERROR]', e);
+      const msg = e?.message || 'خطأ غير معروف';
+      addLog(`✗ فشل: ${msg}`);
       setNotifStatus('error');
-      setNotifError(e?.message || 'Unknown error');
+      setNotifError(msg);
     }
   };
 
@@ -272,13 +285,37 @@ function MainTabs() {
               <_Ionicons name="notifications-off" size={22} color="#fff" />
             </View>
             <Text style={notifBannerStyles.text}>الإشعارات محظورة — فعّلها من إعدادات المتصفح</Text>
-            <TouchableOpacity onPress={() => setShowNotifGuide(false)} style={notifBannerStyles.dismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity
+              onPress={() => {
+                if (typeof localStorage !== 'undefined') localStorage.setItem('notifGuideDismissed', '1');
+                setShowNotifGuide(false);
+              }}
+              style={notifBannerStyles.dismiss}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <_Ionicons name="close" size={20} color="#c4b5fd" />
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => setShowStepsModal(true)} style={notifBannerStyles.allow}>
             <Text style={notifBannerStyles.allowText}>🔧 كيف أفعّلها؟</Text>
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* In-app push log panel — appears when user taps the activate button */}
+      {showPushLogs && Platform.OS === 'web' && pushLogs.length > 0 && (
+        <View style={{ position: 'absolute' as any, bottom: 200, left: 12, right: 12, zIndex: 10000, backgroundColor: '#0f172a', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#334155' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '700' }}>📋 سجل Push</Text>
+            <TouchableOpacity onPress={() => setShowPushLogs(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <_Ionicons name="close" size={16} color="#94a3b8" />
+            </TouchableOpacity>
+          </View>
+          {pushLogs.map((log, i) => (
+            <Text key={i} style={{ color: log.startsWith('✗') ? '#f87171' : log.includes('✓') ? '#4ade80' : '#e2e8f0', fontSize: 12, lineHeight: 20, fontFamily: 'monospace' }}>
+              {log}
+            </Text>
+          ))}
         </View>
       )}
 
