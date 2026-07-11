@@ -244,13 +244,24 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 // Returns true on success, throws a descriptive Error on any failure.
+// IMPORTANT: only call this AFTER the user has granted permission.
+// Never call it speculatively — pushManager.subscribe() with permission='default'
+// triggers or races with the browser permission dialog unexpectedly.
 const registerWebPush = async (registration: ServiceWorkerRegistration, authToken: string): Promise<boolean> => {
   console.log('[Push 1/5] registerWebPush called. authToken present:', !!authToken);
 
   if (!('PushManager' in window)) {
     throw new Error('PushManager not supported in this browser');
   }
-  console.log('[Push 2/5] PushManager supported ✓');
+
+  // Guard: only proceed if permission is already granted.
+  // startEventListener calls this at login; if the user hasn't tapped Allow yet,
+  // skip silently — the banner tap will call subscribeWebPush() after granting.
+  if (Notification.permission !== 'granted') {
+    console.log('[Push] Permission is', Notification.permission, '— skipping until user grants');
+    return false;
+  }
+  console.log('[Push 2/5] PushManager supported, permission granted ✓');
 
   // 1. Get VAPID public key from backend
   let vapidPublicKey: string;
