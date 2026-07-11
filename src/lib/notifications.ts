@@ -18,10 +18,26 @@ const isMobileBrowser = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
+// Lazy AudioContext — created on first user interaction to avoid autoplay policy errors
+let _audioContext: AudioContext | null = null;
+const getAudioContext = (): AudioContext | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (!_audioContext) {
+      _audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return _audioContext;
+  } catch {
+    return null;
+  }
+};
+
 // Play notification sound
 const playNotificationSound = () => {
   try {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const audioContext = getAudioContext();
+    if (!audioContext) return;
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
