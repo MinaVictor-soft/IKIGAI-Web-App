@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Platform, View, Text, StyleSheet } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import { notificationService } from '../lib/notifications';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -60,19 +60,6 @@ const navTheme = {
   },
 };
 
-function NotificationBadge({ count }: { count: number }) {
-  if (count <= 0) return null;
-  return (
-    <View style={badgeStyles.badge}>
-      <Text style={badgeStyles.badgeText}>{count > 9 ? '9+' : count}</Text>
-    </View>
-  );
-}
-
-const badgeStyles = StyleSheet.create({
-  badge: { position: 'absolute', top: -2, right: -6, backgroundColor: COLORS.error, borderRadius: 9, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: COLORS.surface },
-  badgeText: { color: '#fff', fontSize: 9, fontWeight: 'bold' },
-});
 
 
 function MainTabs() {
@@ -165,7 +152,9 @@ function MainTabs() {
           paddingTop: 8,
         },
         tabBarShowLabel: false,
-        tabBarIcon: ({ color, size, focused }) => {
+        tabBarBadge: getBadge(route.name) > 0 ? getBadge(route.name) : undefined,
+        tabBarBadgeStyle: { backgroundColor: COLORS.error, fontSize: 9, minWidth: 16, height: 16 },
+        tabBarIcon: ({ color, focused }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home';
           switch (route.name) {
             case 'Home': iconName = focused ? 'home' : 'home-outline'; break;
@@ -179,7 +168,6 @@ function MainTabs() {
             case 'Profile': iconName = focused ? 'person' : 'person-outline'; break;
             case 'Info': iconName = focused ? 'information-circle' : 'information-circle-outline'; break;
           }
-          const badge = getBadge(route.name);
           return (
             <View style={{
               alignItems: 'center',
@@ -188,10 +176,8 @@ function MainTabs() {
               height: 40,
               borderRadius: 12,
               backgroundColor: focused ? COLORS.primary + '18' : 'transparent',
-              overflow: 'visible',
             }}>
               <Ionicons name={iconName} size={focused ? 22 : 20} color={color} />
-              {badge > 0 && <NotificationBadge count={badge} />}
             </View>
           );
         },
