@@ -392,7 +392,6 @@ const styles = StyleSheet.create({
     color: '#e0d9ff',
     textAlign: 'center',
     lineHeight: 30,
-    writingDirection: 'rtl',
   },
   poemDivider: {
     width: 40,
