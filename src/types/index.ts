@@ -10,6 +10,7 @@ export interface User {
   totalXp: number;
   conferenceXp: number;
   sportsXp: number;
+  marketPoints: number;
   level: Level | null;
   userQrToken: string;
   createdAt: string;
@@ -50,6 +51,7 @@ export interface LeaderboardEntry {
   totalXp: number;
   conferenceXp: number;
   sportsXp: number;
+  marketPoints?: number;
   tribe: Tribe | null;
   level: Level | null;
   rank: number;
