@@ -190,6 +190,27 @@ export default function ProfileScreen() {
         <StatCard label={lang === 'ar' ? 'نقاط المكافآت' : 'Bonus XP'} value={breakdown.bonus} icon="gift" color="#f59e0b" />
       </View>
 
+      {/* Market Points */}
+      <View style={styles.marketCard}>
+        <View style={styles.marketRow}>
+          <View style={styles.marketIconBox}>
+            <Text style={styles.marketIcon}>🛒</Text>
+          </View>
+          <View style={styles.marketInfo}>
+            <Text style={styles.marketLabel}>
+              {lang === 'ar' ? 'نقاط السوق' : 'Market Points'}
+            </Text>
+            <Text style={styles.marketHint}>
+              {lang === 'ar' ? 'نقاطك المتاحة في السوق' : 'Your available points in the market'}
+            </Text>
+          </View>
+          <View style={styles.marketValueBox}>
+            <Text style={styles.marketValue}>{(currentUser as any)?.marketPoints ?? 0}</Text>
+            <Text style={styles.marketValueLabel}>{lang === 'ar' ? 'نقطة' : 'pts'}</Text>
+          </View>
+        </View>
+      </View>
+
       {/* Share Progress Card (captured as image) */}
       <ViewShot ref={shareCardRef} options={{ format: 'png', quality: 1 }}>
         <LinearGradient
@@ -841,6 +862,31 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: SPACING.sm,
   },
+  marketCard: {
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1.5,
+    borderColor: '#d97706' + '40',
+    padding: SPACING.md,
+  },
+  marketRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  marketIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#d97706' + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  marketIcon: { fontSize: 22 },
+  marketInfo: { flex: 1 },
+  marketLabel: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  marketHint: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+  marketValueBox: { alignItems: 'center' },
+  marketValue: { fontSize: 26, fontWeight: '800', color: '#d97706' },
+  marketValueLabel: { fontSize: 11, color: '#d97706', fontWeight: '600' },
   shareButton: {
     borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
