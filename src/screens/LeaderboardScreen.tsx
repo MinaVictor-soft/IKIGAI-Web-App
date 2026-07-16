@@ -159,6 +159,12 @@ export default function LeaderboardScreen() {
                 <Text style={styles.modalTotalXp}>{(selectedUser?.totalXp || 0).toLocaleString()}</Text>
               </View>
 
+              {/* Market Points */}
+              <View style={[styles.modalSection, { backgroundColor: '#d97706' + '18' }]}>
+                <Text style={styles.modalLabel}>🛒 نقاط السوق</Text>
+                <Text style={[styles.modalTotalXp, { color: '#d97706' }]}>{((selectedUser as any)?.marketPoints ?? 0).toLocaleString()}</Text>
+              </View>
+
               {/* Level */}
               {selectedUser?.level && (
                 <View style={styles.modalSection}>
@@ -232,6 +238,9 @@ function LeaderboardRow({
         <View style={styles.xpDetails}>
           <Text style={styles.xpDetailItem}>📖 {entry.conferenceXp || 0}</Text>
           <Text style={styles.xpDetailItem}>⚽ {entry.sportsXp || 0}</Text>
+          {(entry.marketPoints ?? 0) > 0 && (
+            <Text style={styles.marketChip}>🛒 {entry.marketPoints}</Text>
+          )}
         </View>
       </View>
       <View style={styles.xpColumn}>
@@ -299,8 +308,9 @@ const styles = StyleSheet.create({
   rowXp: { fontSize: 16, fontWeight: 'bold', color: COLORS.accent },
   xpLabel: { fontSize: 10, color: COLORS.textSecondary, textAlign: 'center' },
   xpColumn: { alignItems: 'center', minWidth: 50 },
-  xpDetails: { flexDirection: 'row', gap: SPACING.sm, marginTop: 4 },
+  xpDetails: { flexDirection: 'row', gap: SPACING.sm, marginTop: 4, flexWrap: 'wrap' },
   xpDetailItem: { fontSize: 11, color: COLORS.textSecondary },
+  marketChip: { fontSize: 11, color: '#d97706', fontWeight: '600' },
   tribeAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   tribeAvatarText: { fontSize: 14, fontWeight: 'bold', color: '#fff' },
   tribeMembers: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
