@@ -8,6 +8,8 @@ const PROD_API_URL = 'https://ikigai-backend.replit.app/api/v1'; // Production b
 
 export const API_BASE_URL = PROD_API_URL;
 
+export const CONFERENCE_ID = '2600640d-35a9-49cc-9b1a-44d1112bf916';
+
 export const COLORS = {
   // Youth-friendly unisex theme
   primary: '#6366F1',        // Vibrant indigo
