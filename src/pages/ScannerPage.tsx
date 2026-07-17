@@ -36,12 +36,9 @@ export default function ScannerPage() {
 
       } else if (scanMode === 'bonus') {
         const response = await api.post('/bonus/claim', { token: qrCode.trim() })
-        const amount = response.data?.data?.amount || 0
-        const label = response.data?.data?.label || 'بونص'
-        const claimsCount = response.data?.data?.claimsCount ?? null
-        const claimsMsg = claimsCount !== null ? ` • ${claimsCount} مرة محصلة` : ''
-        setResult({ success: true, message: `✓ تم استلام "${label}"! +${amount} XP${claimsMsg}` })
-        toast.success(`تم استلام "${label}"! +${amount} XP${claimsMsg}`)
+        const xpAwarded = response.data?.data?.xpAwarded || 0
+        setResult({ success: true, message: `✓ تم استلام البونص! +${xpAwarded} XP` })
+        toast.success(`تم استلام البونص! +${xpAwarded} XP`)
         await refreshUser()
 
       } else if (scanMode === 'staffAward' && isStaff) {
