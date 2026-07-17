@@ -36,9 +36,10 @@ export default function ScannerPage() {
 
       } else if (scanMode === 'bonus') {
         const response = await api.post('/bonus/claim', { token: qrCode.trim() })
-        const xpEarned = response.data?.data?.xpEarned || 0
-        setResult({ success: true, message: `✓ تم استلام البونص! +${xpEarned} XP` })
-        toast.success(`تم استلام البونص! +${xpEarned} XP`)
+        const amount = response.data?.data?.amount || 0
+        const label = response.data?.data?.label || 'بونص'
+        setResult({ success: true, message: `✓ تم استلام "${label}"! +${amount} XP` })
+        toast.success(`تم استلام "${label}"! +${amount} XP`)
         await refreshUser()
 
       } else if (scanMode === 'staffAward' && isStaff) {
