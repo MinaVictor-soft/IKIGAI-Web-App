@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { LeaderboardEntry, Tribe, XpTransaction, Quiz, Session, FootballMatch, User, Publication, PublicationCategoryObj } from '../types';
+import { CONFERENCE_ID } from '../config/constants';
 
 // XP & Profile
 export function useMyProfile() {
@@ -143,7 +144,9 @@ export function useActiveSessions() {
   return useQuery<Session[]>({
     queryKey: ['sessions'],
     queryFn: async () => {
-      const { data } = await api.get('/attendance/sessions');
+      const { data } = await api.get('/admin/sessions', {
+        headers: { 'X-Conference-Id': CONFERENCE_ID },
+      });
       return data.data;
     },
     refetchInterval: 5000,
