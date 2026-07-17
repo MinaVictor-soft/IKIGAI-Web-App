@@ -147,7 +147,10 @@ export function useActiveSessions() {
       const { data } = await api.get('/admin/sessions', {
         headers: { 'X-Conference-Id': CONFERENCE_ID },
       });
-      return data.data;
+      console.log('[sessions] raw response:', JSON.stringify(data));
+      // Handle multiple possible response shapes
+      const sessions = data.data ?? data.sessions ?? data.items ?? data ?? [];
+      return Array.isArray(sessions) ? sessions : [];
     },
     refetchInterval: 5000,
   });
