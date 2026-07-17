@@ -144,13 +144,8 @@ export function useActiveSessions() {
   return useQuery<Session[]>({
     queryKey: ['sessions'],
     queryFn: async () => {
-      const { data } = await api.get('/admin/sessions', {
-        headers: { 'X-Conference-Id': CONFERENCE_ID },
-      });
-      console.log('[sessions] raw response:', JSON.stringify(data));
-      // Handle multiple possible response shapes
-      const sessions = data.data ?? data.sessions ?? data.items ?? data ?? [];
-      return Array.isArray(sessions) ? sessions : [];
+      const { data } = await api.get('/attendance/sessions');
+      return data.data ?? [];
     },
     refetchInterval: 5000,
   });
