@@ -62,13 +62,16 @@ export interface LeaderboardEntry {
 export interface Session {
   id: string;
   title: string;
+  description: string | null;
   speaker: string | null;
   location: string | null;
+  sessionDate: string | null;
   startTime: string;
   endTime: string;
   xpReward: number;
-  qrCode: string;
-  isActive: boolean;
+  status: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | string;
+  qrCode?: string;
+  isActive?: boolean;
 }
 
 export interface Quiz {
