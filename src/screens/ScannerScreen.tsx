@@ -66,7 +66,9 @@ export default function ScannerScreen() {
         await refreshUser();
       } else if (mode === 'bonus') {
         response = await api.post('/bonus/claim', { token: data });
-        setResult({ success: true, message: response.data.message || `+${response.data.data?.xpEarned || ''} XP earned!` });
+        const bonusAmount = response.data.data?.amount || 0;
+        const bonusLabel = response.data.data?.label || 'Bonus';
+        setResult({ success: true, message: response.data.message || `+${bonusAmount} XP — ${bonusLabel}` });
         await refreshUser();
       } else if (mode === 'staffAward') {
         // Staff scanned a user QR - show award form
