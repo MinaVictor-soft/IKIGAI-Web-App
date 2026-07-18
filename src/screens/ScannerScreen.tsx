@@ -62,22 +62,42 @@ export default function ScannerScreen() {
       let response;
       if (mode === 'attendance') {
         response = await api.post('/attendance/scan', { qrToken: data });
-        setResult({ success: true, message: response.data.message || `+${response.data.data?.xpEarned || response.data.data?.xpAwarded || ''} XP earned!` });
+        const d = response.data?.data;
+        const xpAwarded = d?.xpAwarded || 0;
+        const sessionTitle = d?.session?.title || '';
+        const isLate = d?.isLate || false;
+        const alreadyRecorded = d?.alreadyRecorded || false;
+        const msg = alreadyRecorded
+          ? `✓ Attendance already recorded${sessionTitle ? ` — ${sessionTitle}` : ''}`
+          : `✓ +${xpAwarded} XP${sessionTitle ? ` — ${sessionTitle}` : ''}${isLate ? ' (Late)' : ''}`;
+        setResult({ success: true, message: msg });
         await refreshUser();
       } else if (mode === 'bonus') {
         response = await api.post('/bonus/claim', { token: data });
-        const xpAwarded = response.data.data?.xpAwarded || 0;
-        setResult({ success: true, message: response.data.message || `+${xpAwarded} XP earned!` });
+        const d = response.data?.data;
+        const xpAwarded = d?.xpAwarded || 0;
+        const newBalance = d?.newBalance ?? null;
+        const msg = `✓ +${xpAwarded} XP${newBalance !== null ? ` • Balance: ${newBalance}` : ''}`;
+        setResult({ success: true, message: msg });
         await refreshUser();
       } else if (mode === 'staffAward') {
-        // Staff scanned a user QR - show award form
         setStaffAwardTarget(data);
         setResult(null);
         setScanning(false);
         return;
       }
     } catch (error: any) {
-      const msg = error?.response?.data?.error?.message || error?.response?.data?.message || 'Scan failed. Try again.';
+      const code = error?.response?.data?.error?.code || '';
+      const errorMessages: Record<string, string> = {
+        INVALID_QR_TOKEN: 'Invalid or expired QR code',
+        SESSION_NOT_ACTIVE: 'Session is not active yet',
+        ALREADY_SCANNED: 'You already recorded attendance for this session',
+        BONUS_QR_NOT_FOUND: 'Bonus QR not found',
+        BONUS_QR_EXHAUSTED: 'This QR has reached its maximum claims',
+        ALREADY_CLAIMED: 'You already claimed this bonus',
+        UNAUTHORIZED: 'Session expired, please login again',
+      };
+      const msg = errorMessages[code] || error?.response?.data?.error?.message || 'Scan failed. Try again.';
       setResult({ success: false, message: msg });
     } finally {
       setScanning(false);
