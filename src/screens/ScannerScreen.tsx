@@ -88,16 +88,16 @@ export default function ScannerScreen() {
       }
     } catch (error: any) {
       const code = error?.response?.data?.error?.code || '';
+      const backendMessage = error?.response?.data?.error?.message || '';
       const errorMessages: Record<string, string> = {
-        INVALID_QR_TOKEN: 'Invalid or expired QR code',
-        SESSION_NOT_ACTIVE: 'Session is not active yet',
-        ALREADY_SCANNED: 'You already recorded attendance for this session',
-        BONUS_QR_NOT_FOUND: 'Bonus QR not found',
-        BONUS_QR_EXHAUSTED: 'This QR has reached its maximum claims',
-        ALREADY_CLAIMED: 'You already claimed this bonus',
-        UNAUTHORIZED: 'Session expired, please login again',
+        ALREADY_SCANNED: 'سبق تسجيل حضورك',
+        SESSION_NOT_ACTIVE: 'الجلسة غير مفعّلة حالياً',
+        INVALID_QR_TOKEN: 'رمز QR غير صالح',
+        ALREADY_CLAIMED: 'سبق استخدام هذا الرمز',
+        BONUS_QR_MAX_CLAIMS: 'تم استنفاد هذا الرمز',
+        UNAUTHORIZED: 'يرجى تسجيل الدخول مجدداً',
       };
-      const msg = errorMessages[code] || error?.response?.data?.error?.message || 'Scan failed. Try again.';
+      const msg = errorMessages[code] || backendMessage || 'Scan failed. Try again.';
       setResult({ success: false, message: msg });
     } finally {
       setScanning(false);
