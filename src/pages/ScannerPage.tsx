@@ -29,16 +29,27 @@ export default function ScannerPage() {
     try {
       if (scanMode === 'attendance') {
         const response = await api.post('/attendance/scan', { qrToken: qrCode.trim() })
-        const xpEarned = response.data?.data?.xpEarned || response.data?.data?.xpAwarded || 0
-        setResult({ success: true, message: `✓ تم تسجيل الحضور! +${xpEarned} XP` })
-        toast.success(`تم تسجيل الحضور! +${xpEarned} XP`)
+        const d = response.data?.data
+        const xpAwarded = d?.xpAwarded || 0
+        const sessionTitle = d?.session?.title || ''
+        const isLate = d?.isLate || false
+        const alreadyRecorded = d?.alreadyRecorded || false
+        let msg = alreadyRecorded
+          ? `✓ حضورك مسجل بالفعل${sessionTitle ? ` — ${sessionTitle}` : ''}`
+          : `✓ تم تسجيل الحضور! +${xpAwarded} XP${sessionTitle ? ` — ${sessionTitle}` : ''}${isLate ? ' (متأخر)' : ''}`
+        setResult({ success: true, message: msg })
+        toast.success(msg)
         await refreshUser()
 
       } else if (scanMode === 'bonus') {
         const response = await api.post('/bonus/claim', { token: qrCode.trim() })
-        const xpAwarded = response.data?.data?.xpAwarded || 0
-        setResult({ success: true, message: `✓ تم استلام البونص! +${xpAwarded} XP` })
-        toast.success(`تم استلام البونص! +${xpAwarded} XP`)
+        const d = response.data?.data
+        const xpAwarded = d?.xpAwarded || 0
+        const newBalance = d?.newBalance ?? null
+        const balanceMsg = newBalance !== null ? ` • رصيدك: ${newBalance} XP` : ''
+        const msg = `✓ تم استلام البونص! +${xpAwarded} XP${balanceMsg}`
+        setResult({ success: true, message: msg })
+        toast.success(msg)
         await refreshUser()
 
       } else if (scanMode === 'staffAward' && isStaff) {
@@ -48,7 +59,17 @@ export default function ScannerPage() {
 
       setManualInput('')
     } catch (error: any) {
-      const message = error?.response?.data?.error?.message || error?.response?.data?.message || 'فشل الـ scan، حاول تاني'
+      const code = error?.response?.data?.error?.code || ''
+      const errorMessages: Record<string, string> = {
+        INVALID_QR_TOKEN: 'الـ QR مش صحيح أو منتهي الصلاحية',
+        SESSION_NOT_ACTIVE: 'الـ session مش شغالة دلوقتي',
+        ALREADY_SCANNED: 'سجلت حضورك في الـ session دي قبل كده',
+        BONUS_QR_NOT_FOUND: 'الـ QR مش موجود',
+        BONUS_QR_EXHAUSTED: 'الـ QR وصل أقصى عدد claims',
+        ALREADY_CLAIMED: 'استلمت البونص ده قبل كده',
+        UNAUTHORIZED: 'انتهت الجلسة، ادخل تاني',
+      }
+      const message = errorMessages[code] || error?.response?.data?.error?.message || error?.response?.data?.message || 'فشل الـ scan، حاول تاني'
       setResult({ success: false, message: `✗ ${message}` })
       toast.error(message)
     } finally {
